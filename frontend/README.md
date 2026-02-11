@@ -13,12 +13,12 @@ npm install @dfinity/agent @dfinity/candid @dfinity/principal @dfinity/auth-clie
 
 | File | Use Case | Chains |
 |------|----------|--------|
-| `01-quick-start.ts` | Connect + get addresses + balances | All 15 chains |
-| `02-send-tokens.ts` | Send any token on any chain | SOL, ETH, BTC, ICP, XRP, SUI, TON, etc. |
+| `01-quick-start.ts` | Connect + get addresses + balances | All 19 chains |
+| `02-send-tokens.ts` | Send any token on any chain | All 19 chains (SOL, ETH, BTC, ICP, XRP, SUI, TON, ADA, TRX, APT, LTC, NEAR, CLOAK, RUNE) |
 | `03-swap.ts` | DEX swaps (6 DEXes) | SOL, EVM, ICP, SUI, Cardano, XRP |
 | `04-bridge-eth-to-sol.ts` | CCTP bridge USDC from EVM to Solana | ETH/ARB/BASE → SOL |
-| `05-merchant-checkout.ts` | Accept crypto payments in your store | All chains |
-| `06-portfolio-tracker.ts` | Multi-chain portfolio dashboard | All 15 chains |
+| `05-merchant-checkout.ts` | Accept crypto payments in your store | All 19 chains |
+| `06-portfolio-tracker.ts` | Multi-chain portfolio dashboard | All 19 chains |
 
 ## Canister ID
 

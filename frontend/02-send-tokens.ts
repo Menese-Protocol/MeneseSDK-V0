@@ -6,15 +6,26 @@
  *   - Solana SPL tokens   → transferSplToken(mintAddress, toAddress, amount)
  *   - Ethereum/EVM chains → sendEvmNativeTokenAutonomous(chain, to, amountWei, devKey?)
  *   - ICP                 → sendICP(toPrincipal, e8s)
- *   - Bitcoin              → sendBitcoin(toAddress, satoshis)
- *   - XRP                 → sendXrpAutonomous(toAddress, amountDrops, destTag?)
- *   - SUI                 → sendSui(toAddress, mist)
- *   - TON                 → sendTonSimple(toAddress, nanotons)
+ *   - ICP ICRC-1 tokens   → sendICRC1(toPrincipal, amount, ledgerCanisterId)
+ *   - Bitcoin              → sendBitcoin(toAddress, satoshis) / sendBitcoinDynamicFee / sendBitcoinWithFee
+ *   - XRP                 → sendXrpAutonomous(toAddress, amountXrp, destTag?)
+ *   - XRP IOU tokens      → sendXrpIOU(toAddress, currency, issuer, amount, destTag?)
+ *   - SUI                 → sendSui(toAddress, mist) / sendSuiMax / transferSuiCoin
+ *   - TON                 → sendTonSimple(toAddress, nanotons) / sendTon / sendTonWithComment
+ *   - Cardano (ADA)       → sendCardanoTransaction(toAddress, lovelace)
+ *   - Tron (TRX)          → sendTrx(toAddress, sun)
+ *   - Tron TRC-20 tokens  → sendTrc20(contractAddress, toAddress, amount, feeLimit)
+ *   - Aptos (APT)         → sendAptos(toAddress, octas)
+ *   - Litecoin (LTC)      → sendLitecoin(toAddress, litoshis) / sendLitecoinWithFee
+ *   - Near (NEAR)         → sendNearTransferFromUser(receiverId, yoctoNear)
+ *   - CloakCoin (CLOAK)   → sendCloak(toAddress, amount)
+ *   - Thorchain (RUNE)    → sendThor(toAddress, amount, memo)
  *
  * Cost: $0.05 per send operation (billed to caller or developer key)
  *
  * EVM chains supported: "ethereum", "arbitrum", "base", "polygon", "bsc", "optimism"
  * All EVM chains use the SAME derived address — one key, multiple networks.
+ * All 19 chains have native transaction building — no external signing needed.
  *
  * Tested: Feb 11, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
@@ -172,6 +183,138 @@ async function sendTon(toAddress: string, amountTon: number) {
   return result;
 }
 
+// ── Send Cardano (ADA) ──────────────────────────────────────
+async function sendAda(toAddress: string, amountAda: number) {
+  const menese = await createMeneseActor();
+  const lovelace = BigInt(Math.round(amountAda * 1e6));
+
+  console.log(`Sending ${amountAda} ADA to ${toAddress}...`);
+  const result = await menese.sendCardanoTransaction(toAddress, lovelace) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send Tron (TRX) ────────────────────────────────────────
+async function sendTrx(toAddress: string, amountTrx: number) {
+  const menese = await createMeneseActor();
+  const sun = BigInt(Math.round(amountTrx * 1e6)); // 1 TRX = 1,000,000 sun
+
+  console.log(`Sending ${amountTrx} TRX to ${toAddress}...`);
+  const result = await menese.sendTrx(toAddress, sun) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send TRC-20 Token (USDT on Tron, etc.) ─────────────────
+async function sendTrc20Token(
+  contractAddress: string, // TRC-20 contract (e.g., USDT: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t)
+  toAddress: string,
+  amount: number,
+  feeLimit: number = 30_000_000, // Default 30 TRX fee limit
+) {
+  const menese = await createMeneseActor();
+
+  console.log(`Sending TRC-20 to ${toAddress}...`);
+  const result = await menese.sendTrc20(contractAddress, toAddress, BigInt(amount), BigInt(feeLimit)) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send Aptos (APT) ───────────────────────────────────────
+async function sendApt(toAddress: string, amountApt: number) {
+  const menese = await createMeneseActor();
+  const octas = BigInt(Math.round(amountApt * 1e8)); // 1 APT = 1e8 octas
+
+  console.log(`Sending ${amountApt} APT to ${toAddress}...`);
+  const result = await menese.sendAptos(toAddress, octas) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send Litecoin (LTC) ────────────────────────────────────
+async function sendLtc(toAddress: string, amountLtc: number) {
+  const menese = await createMeneseActor();
+  const litoshis = BigInt(Math.round(amountLtc * 1e8));
+
+  console.log(`Sending ${amountLtc} LTC to ${toAddress}...`);
+  const result = await menese.sendLitecoin(toAddress, litoshis) as any;
+
+  if ("ok" in result) {
+    console.log("TX ID:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send Near (NEAR) ───────────────────────────────────────
+async function sendNear(receiverId: string, amountNear: number) {
+  const menese = await createMeneseActor();
+  // 1 NEAR = 1e24 yoctoNEAR
+  const yocto = BigInt(Math.round(amountNear * 1e6)) * BigInt(1e18);
+
+  console.log(`Sending ${amountNear} NEAR to ${receiverId}...`);
+  const result = await menese.sendNearTransferFromUser(receiverId, yocto) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send CloakCoin (CLOAK) ─────────────────────────────────
+async function sendCloak(toAddress: string, amount: number) {
+  const menese = await createMeneseActor();
+
+  console.log(`Sending ${amount} CLOAK to ${toAddress}...`);
+  const result = await menese.sendCloak(toAddress, BigInt(amount)) as any;
+
+  if ("ok" in result) {
+    console.log("TX ID:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
+// ── Send Thorchain (RUNE) ──────────────────────────────────
+async function sendRune(toAddress: string, amountRune: number, memo: string = "") {
+  const menese = await createMeneseActor();
+  const baseAmount = BigInt(Math.round(amountRune * 1e8)); // 1 RUNE = 1e8 base units
+
+  console.log(`Sending ${amountRune} RUNE to ${toAddress}...`);
+  const result = await menese.sendThor(toAddress, baseAmount, memo) as any;
+
+  if ("ok" in result) {
+    console.log("TX hash:", result.ok);
+  } else {
+    console.error("Failed:", result.err);
+  }
+  return result;
+}
+
 // ── Example usage ────────────────────────────────────────────
 async function main() {
   // Send 0.001 SOL
@@ -201,6 +344,30 @@ async function main() {
 
   // Send 0.1 TON
   await sendTon("EQRecipientTonAddress", 0.1);
+
+  // Send 5 ADA (Cardano)
+  await sendAda("addr1qRecipientCardanoAddress", 5);
+
+  // Send 10 TRX (Tron)
+  await sendTrx("TRecipientTronAddress", 10);
+
+  // Send 10 USDT on Tron (TRC-20)
+  await sendTrc20Token("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "TRecipientAddr", 10_000_000);
+
+  // Send 0.1 APT (Aptos)
+  await sendApt("0xRecipientAptosAddress", 0.1);
+
+  // Send 0.01 LTC (Litecoin)
+  await sendLtc("ltc1qRecipientLitecoinAddress", 0.01);
+
+  // Send 0.1 NEAR
+  await sendNear("recipient.near", 0.1);
+
+  // Send 100 CLOAK
+  await sendCloak("CloakRecipientAddress", 100);
+
+  // Send 1 RUNE (Thorchain)
+  await sendRune("thor1RecipientAddress", 1, "");
 }
 
 main().catch(console.error);

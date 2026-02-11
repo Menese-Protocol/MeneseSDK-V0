@@ -108,6 +108,29 @@ export const idlFactory = ({ IDL }: any) => {
     sendXrpAutonomous: IDL.Func([IDL.Text, IDL.Text, IDL.Opt(IDL.Nat32)], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
     sendSui: IDL.Func([IDL.Text, IDL.Nat64], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
     sendTonSimple: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendTon: IDL.Func([IDL.Text, IDL.Nat64, IDL.Bool, IDL.Opt(IDL.Text), IDL.Nat32], [Result], []),
+    sendTonWithComment: IDL.Func([IDL.Text, IDL.Nat64, IDL.Text], [Result], []),
+    sendCardanoTransaction: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendTrx: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendTrc20: IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Nat], [Result], []),
+    sendAptos: IDL.Func([IDL.Text, IDL.Nat64], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
+    sendLitecoin: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendLitecoinWithFee: IDL.Func([IDL.Text, IDL.Nat64, IDL.Nat64], [Result], []),
+    sendBitcoinDynamicFee: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendBitcoinWithFee: IDL.Func([IDL.Text, IDL.Nat64, IDL.Nat64], [Result], []),
+    sendNearTransferFromUser: IDL.Func([IDL.Text, IDL.Nat], [Result], []),
+    sendCloak: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
+    sendThor: IDL.Func([IDL.Text, IDL.Nat64, IDL.Text], [Result], []),
+    sendICRC1: IDL.Func([IDL.Principal, IDL.Nat, IDL.Text], [Result], []),
+    sendXrpIOU: IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Nat32)], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
+    sendSuiMax: IDL.Func([IDL.Text], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
+    transferSuiCoin: IDL.Func([IDL.Text, IDL.Text, IDL.Nat64], [IDL.Variant({ ok: IDL.Record({ txHash: IDL.Text }), err: IDL.Text })], []),
+
+    // === CHAIN-SPECIFIC SETUP ===
+    createMySolanaAtaForMint: IDL.Func([IDL.Text], [Result], []),
+    getMySolanaAta: IDL.Func([IDL.Text], [Result], []),
+    xrpSetTrustline: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result], []),
+    xrpGetAccountLines: IDL.Func([], [IDL.Variant({ ok: IDL.Text, err: IDL.Text })], []),
 
     // === SWAP ($0.075 per operation) ===
     swapRaydiumApiUser: IDL.Func(

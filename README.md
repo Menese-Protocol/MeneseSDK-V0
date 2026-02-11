@@ -1,10 +1,10 @@
 # MeneseSDK V0 — Integration Guide
 
-**One SDK. 15 chains. 6 DEXes. One canister call.**
+**One SDK. 19 chains. 6 DEXes. One canister call.**
 
 MeneseSDK is a multi-chain crypto SDK deployed on the Internet Computer (ICP).
 Your app (frontend or backend canister) makes a single inter-canister call to sign,
-send, swap, or bridge across 15 blockchains — no private keys to manage, no RPC
+send, swap, or bridge across 19 blockchains — no private keys to manage, no RPC
 infrastructure to maintain.
 
 **Mainnet Canister:** `urs2a-ziaaa-aaaad-aembq-cai`
@@ -39,27 +39,29 @@ examples/
 
 ---
 
-## Supported Chains (15)
+## Supported Chains (19)
 
 | Chain | Address | Send | Swap | Bridge |
 |-------|---------|------|------|--------|
-| **Solana** | getMySolanaAddress | sendSol, transferSplToken | Raydium | ETH→SOL |
-| **Ethereum** | getMyEvmAddress | sendEth | Uniswap V3 | ETH→SOL |
-| **Arbitrum** | (same EVM address) | sendEth (ARB) | Uniswap V3 | — |
-| **Base** | (same EVM address) | sendEth (BASE) | Uniswap V3 | USDC→SOL |
-| **Polygon** | (same EVM address) | sendEth (POLY) | Uniswap V3 | — |
-| **BNB Chain** | (same EVM address) | sendEth (BNB) | Uniswap V3 | — |
-| **Optimism** | (same EVM address) | sendEth (OP) | Uniswap V3 | — |
-| **Bitcoin** | getMyBitcoinAddress | sendBtc | — | — |
-| **ICP** | (caller principal) | sendIcp | ICPSwap + KongSwap | — |
-| **Cardano** | getMyCardanoAddress | — | Minswap | — |
-| **XRP** | getMyXrpAddress | xrpSend | XRP Ledger DEX | — |
-| **SUI** | getMySuiAddress | suiSend | Cetus | — |
-| **TON** | getMyTonAddress | tonSend | — | — |
-| **Tron** | getMyTronAddress | — | — | — |
-| **Aptos** | getMyAptosAddress | — | — | — |
-
-Plus: Litecoin, Near, CloakCoin, Thorchain (address derivation available).
+| **Solana** | getMySolanaAddress | sendSolTransaction, transferSplToken | Raydium | ETH→SOL |
+| **Ethereum** | getMyEvmAddress | sendEvmNativeTokenAutonomous | Uniswap V3 | ETH→SOL |
+| **Arbitrum** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
+| **Base** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | USDC→SOL |
+| **Polygon** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
+| **BNB Chain** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
+| **Optimism** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
+| **Bitcoin** | getMyBitcoinAddress | sendBitcoin, sendBitcoinWithFee, sendBitcoinDynamicFee | — | — |
+| **ICP** | (caller principal) | sendICP, sendICRC1 | ICPSwap + KongSwap | — |
+| **Cardano** | getMyCardanoAddress | sendCardanoTransaction | Minswap | — |
+| **XRP** | getMyXrpAddress | sendXrpAutonomous, sendXrpIOU | XRP Ledger DEX | — |
+| **SUI** | getMySuiAddress | sendSui, sendSuiMax, transferSuiCoin | Cetus | — |
+| **TON** | getMyTonAddress | sendTonSimple, sendTon, sendTonWithComment | — | — |
+| **Tron** | getMyTronAddress | sendTrx, sendTrc20 | — | — |
+| **Aptos** | getMyAptosAddress | sendAptos | — | — |
+| **Litecoin** | getMyLitecoinAddress | sendLitecoin, sendLitecoinWithFee | — | — |
+| **Near** | getMyNearAddress | sendNearTransfer, sendNearTransferFromUser | — | — |
+| **CloakCoin** | getMyCloakAddress | sendCloak | — | — |
+| **Thorchain** | getMyThorAddress | sendThor | — | — |
 
 ---
 
