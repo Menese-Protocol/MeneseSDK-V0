@@ -16,8 +16,8 @@ npm install @dfinity/agent @dfinity/candid @dfinity/principal @dfinity/auth-clie
 | `01-quick-start.ts` | Connect + get addresses + balances | All 19 chains |
 | `02-send-tokens.ts` | Send any token on any chain | All 19 chains (SOL, ETH, BTC, ICP, XRP, SUI, TON, ADA, TRX, APT, LTC, NEAR, CLOAK, RUNE) |
 | `03-swap.ts` | DEX swaps (6 DEXes) | SOL, EVM, ICP, SUI, Cardano, XRP |
-| `04-bridge-eth-to-sol.ts` | CCTP bridge USDC from EVM to Solana | ETH/ARB/BASE → SOL |
-| `05-merchant-checkout.ts` | Accept crypto payments in your store | All 19 chains |
+| `04-bridge-eth-to-sol.ts` | Bridge between EVM and Solana (both directions) | ETH/ARB/BASE/OP/POLY ↔ SOL |
+| `05-merchant-checkout.ts` | Accept crypto payments in your store | SOL, ETH, BTC, ICP |
 | `06-portfolio-tracker.ts` | Multi-chain portfolio dashboard | All 19 chains |
 
 ## Canister ID
@@ -37,10 +37,36 @@ const key = await menese.registerDeveloperCanister(myCanisterId, "MyApp");
 
 | Operation | Cost | Examples |
 |-----------|------|----------|
-| Sign/Send | $0.05 | sendSol, sendBtc, sendIcp, transferSplToken |
-| Swap | $0.075 | Raydium, Uniswap, ICPSwap/KongSwap, Cetus, Minswap, XRP DEX |
-| Bridge | $0.10 | startCctpBridge, quickUltrafastBridge |
+| Sign/Send | $0.05 | sendSolTransaction, sendBitcoin, sendICP, sendEvmNativeTokenAutonomous |
+| Swap | $0.075 | swapRaydiumApiUser, swapTokens, executeICPDexSwap, executeSuiSwap, executeMinswapSwap, xrpSwap |
+| Bridge | $0.10 | quickUltrafastEthToSol, quickCctpBridge, quickSolToEth |
 | Read/Query | FREE | getBalance, getAddress, getQuote |
+
+## EVM Chains — Bring Your Own RPC
+
+For EVM sends, swaps, and bridges, you must provide your own RPC endpoint and chain ID.
+MeneseSDK does NOT manage EVM RPC connections — this keeps costs low and gives you
+control over reliability and rate limits.
+
+```typescript
+// EVM chain config — provide your own RPCs
+const EVM_CHAINS = {
+  ethereum:  { chainId: 1,     rpc: "https://eth.llamarpc.com" },
+  arbitrum:  { chainId: 42161, rpc: "https://arb1.arbitrum.io/rpc" },
+  base:      { chainId: 8453,  rpc: "https://mainnet.base.org" },
+  polygon:   { chainId: 137,   rpc: "https://polygon-rpc.com" },
+  bsc:       { chainId: 56,    rpc: "https://bsc-dataseed1.binance.org" },
+  optimism:  { chainId: 10,    rpc: "https://mainnet.optimism.io" },
+};
+
+// Send ETH on Arbitrum — pass RPC + chainId
+await menese.sendEvmNativeTokenAutonomous(
+  "0xRecipient", amountWei, EVM_CHAINS.arbitrum.rpc, BigInt(42161), []
+);
+```
+
+Free public RPCs work fine for testing. For production, use Alchemy, Infura, or
+chain-specific premium RPCs for better reliability and throughput.
 
 ## Chain-Specific Setup
 
@@ -53,7 +79,7 @@ Before receiving or swapping to a new SPL token, create the ATA:
 
 ```typescript
 // Create ATA for USDC (one-time per token, costs ~0.002 SOL for rent)
-await menese.createMySolanaAtaForMint("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+await menese.createMySolanaAtaForMint(mintBase58, ataBase58);
 
 // Check your ATA address
 const ata = await menese.getMySolanaAta("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -84,7 +110,26 @@ Without a trustline, swaps and transfers receiving that token will fail.
 - **SUI**: No setup needed. Coin objects are created automatically.
 - **Cardano**: No setup needed. Native tokens transfer alongside ADA.
 - **Bitcoin/Litecoin**: No setup needed. UTXO-based.
-- **TON**: No setup needed.
+- **TON/Tron/Aptos/NEAR/CloakCoin/Thorchain**: No setup needed.
+
+## Important: Correct Field Names
+
+Address types return records with specific field names. Using the wrong field will
+cause runtime errors. Key differences from what you might expect:
+
+| Chain | Correct Field | Wrong (will fail) |
+|-------|--------------|-------------------|
+| EVM | `evmAddress` | `address` |
+| SUI | `suiAddress` | `address` |
+| TON | `bounceable` / `nonBounceable` | `address` |
+| Cardano | `bech32Address` | `address` |
+| Bitcoin | `bech32Address` | (returns record, not text) |
+| Litecoin | `bech32Address` | (returns record, not text) |
+| Thorchain | `bech32Address` | `address` |
+| Tron | `base58Address` | `base58` |
+| NEAR | `implicitAccountId` | `accountId` |
+
+See `menese-config.ts` for the complete, correct IDL.
 
 ## Performance Tip
 

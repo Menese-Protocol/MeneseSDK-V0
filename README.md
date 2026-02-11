@@ -18,12 +18,12 @@ examples/
 ├── README.md                  ← You are here
 ├── frontend/                  ← TypeScript examples for web apps
 │   ├── menese-config.ts       ← Shared config: Candid IDL + actor helpers
-│   ├── 01-quick-start.ts      ← Connect via II, get 15-chain addresses + balances
-│   ├── 02-send-tokens.ts      ← Send tokens: SOL, ETH, BTC, ICP, XRP, SUI, TON
+│   ├── 01-quick-start.ts      ← Connect via II, get 19-chain addresses + balances
+│   ├── 02-send-tokens.ts      ← Send tokens on all 19 chains
 │   ├── 03-swap.ts             ← DEX swaps across 6 DEXes
-│   ├── 04-bridge-eth-to-sol.ts← Bridge ETH/USDC → SOL (ultrafast + CCTP)
+│   ├── 04-bridge-eth-to-sol.ts← Bridge ETH↔SOL (both directions)
 │   ├── 05-merchant-checkout.ts← Accept payments, poll, sweep to treasury
-│   ├── 06-portfolio-tracker.ts← Multi-chain portfolio dashboard
+│   ├── 06-portfolio-tracker.ts← Multi-chain portfolio dashboard (19 chains)
 │   └── README.md
 ├── backend/                   ← Motoko examples for canister-to-canister calls
 │   ├── MeneseInterface.mo     ← Remote actor type definition (import this)
@@ -43,23 +43,23 @@ examples/
 
 | Chain | Address | Send | Swap | Bridge |
 |-------|---------|------|------|--------|
-| **Solana** | getMySolanaAddress | sendSolTransaction, transferSplToken | Raydium | ETH→SOL |
-| **Ethereum** | getMyEvmAddress | sendEvmNativeTokenAutonomous | Uniswap V3 | ETH→SOL |
+| **Solana** | getMySolanaAddress | sendSolTransaction, transferSplToken | Raydium | ETH↔SOL |
+| **Ethereum** | getMyEvmAddress | sendEvmNativeTokenAutonomous | Uniswap V3 | ETH↔SOL |
 | **Arbitrum** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
 | **Base** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | USDC→SOL |
 | **Polygon** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
 | **BNB Chain** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
 | **Optimism** | (same EVM address) | sendEvmNativeTokenAutonomous | Uniswap V3 | — |
-| **Bitcoin** | getMyBitcoinAddress | sendBitcoin, sendBitcoinWithFee, sendBitcoinDynamicFee | — | — |
+| **Bitcoin** | getMyBitcoinAddress | sendBitcoin, sendBitcoinDynamicFee | — | — |
 | **ICP** | (caller principal) | sendICP, sendICRC1 | ICPSwap + KongSwap | — |
 | **Cardano** | getMyCardanoAddress | sendCardanoTransaction | Minswap | — |
 | **XRP** | getMyXrpAddress | sendXrpAutonomous, sendXrpIOU | XRP Ledger DEX | — |
 | **SUI** | getMySuiAddress | sendSui, sendSuiMax, transferSuiCoin | Cetus | — |
 | **TON** | getMyTonAddress | sendTonSimple, sendTon, sendTonWithComment | — | — |
-| **Tron** | getMyTronAddress | sendTrx, sendTrc20 | — | — |
+| **Tron** | getTronAddress | sendTrx, sendTrc20 | — | — |
 | **Aptos** | getMyAptosAddress | sendAptos | — | — |
 | **Litecoin** | getMyLitecoinAddress | sendLitecoin, sendLitecoinWithFee | — | — |
-| **Near** | getMyNearAddress | sendNearTransfer, sendNearTransferFromUser | — | — |
+| **Near** | getMyNearAddress | sendNearTransfer | — | — |
 | **CloakCoin** | getMyCloakAddress | sendCloak | — | — |
 | **Thorchain** | getMyThorAddress | sendThor | — | — |
 
@@ -67,14 +67,14 @@ examples/
 
 ## 6 DEXes
 
-| DEX | Chain | Example |
-|-----|-------|---------|
-| **Raydium** | Solana | `swapSolana("SOL", "USDC", amount, slippage)` |
-| **Uniswap V3** | ETH/ARB/BASE/POLY/BNB/OP | `swapEvm(chainId, tokenIn, tokenOut, amount, slippage)` |
-| **ICPSwap + KongSwap** | ICP | `swapIcp(tokenIn, tokenOut, amount, slippage)` |
+| DEX | Chain | Function |
+|-----|-------|----------|
+| **Raydium** | Solana | `swapRaydiumApiUser(inputMint, outputMint, amount, slippage, wrapSol, unwrapSol, ?inputAta, ?outputAta)` |
+| **Uniswap V3** | ETH/ARB/BASE/POLY/BNB/OP | `swapTokens(quoteId, from, to, amount, slippage, feeOnTransfer, rpcEndpoint)` |
+| **ICPSwap + KongSwap** | ICP | `executeICPDexSwap(request)` |
 | **Cetus** | SUI | `executeSuiSwap(network, from, to, amount, minOut)` |
 | **Minswap** | Cardano | `executeMinswapSwap(tokenIn, tokenOut, amount, slippage)` |
-| **XRP Ledger DEX** | XRP | `xrpSwap(dest, send, paths, slippage)` |
+| **XRP Ledger DEX** | XRP | `xrpSwap(destAmount, sendMax, paths, slippage)` |
 
 ---
 
@@ -82,9 +82,9 @@ examples/
 
 | Operation | Cost | Examples |
 |-----------|------|----------|
-| **Sign / Send** | $0.05 | sendSol, sendBtc, sendIcp, sendEth, xrpSend, suiSend, tonSend |
-| **Swap** | $0.075 | Raydium, Uniswap, ICPSwap, KongSwap, Cetus, Minswap, XRP DEX |
-| **Bridge** | $0.10 | quickUltrafastEthToSol, startCctpBridge |
+| **Sign / Send** | $0.05 | sendSolTransaction, sendBitcoin, sendICP, sendEvmNativeTokenAutonomous |
+| **Swap** | $0.075 | swapRaydiumApiUser, swapTokens, executeICPDexSwap, executeSuiSwap, executeMinswapSwap, xrpSwap |
+| **Bridge** | $0.10 | quickUltrafastEthToSol, quickCctpBridge, quickSolToEth |
 | **Read / Query** | FREE | getAddress, getBalance, getQuote, validateDeveloperKey |
 
 Payment accepted in: **ckBTC, ICP, ckETH** (via ICRC-2 approve+transferFrom).
@@ -112,11 +112,15 @@ const sol = await menese.getMySolanaAddress();
 console.log("Solana:", sol.address);
 
 // Send 0.1 SOL
-const tx = await menese.sendSol(100_000_000n, "5xK2abc...");
+const tx = await menese.sendSolTransaction("5xK2abc...", 100_000_000n);
 
-// Swap 1 SOL → USDC on Raydium
-const swap = await menese.swapSolana("So11111111111111111111111111111111111111112",
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", 1_000_000_000n, 50n);
+// Swap 1 SOL → USDC on Raydium (8 params, returns flat record)
+const swap = await menese.swapRaydiumApiUser(
+  "So11111111111111111111111111111111111111112",
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  1_000_000_000n, 150n, true, false, [], []
+);
+console.log("TX:", swap.txSignature, "Output:", swap.outputAmount);
 ```
 
 ### Backend (Motoko canister)
@@ -132,9 +136,12 @@ actor MyApp {
     addr.address;
   };
 
-  public shared func paySol(amount : Nat64, to : Text) : async Text {
-    let result = await menese.sendSol(amount, to);
-    result.txHash;
+  // sendSolTransaction returns Result<Text, Text>
+  public shared func paySol(to : Text, lamports : Nat64) : async Text {
+    switch (await menese.sendSolTransaction(to, lamports)) {
+      case (#ok(txHash)) txHash;
+      case (#err(e)) "Error: " # e;
+    };
   };
 };
 ```
@@ -147,6 +154,33 @@ dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister \
 
 ---
 
+## EVM Chains — Bring Your Own RPC
+
+**For all EVM chains (ETH, Arbitrum, Base, Polygon, BSC, Optimism), you must
+provide your own RPC endpoint.** MeneseSDK does NOT manage EVM RPC connections.
+
+```typescript
+// EVM chain config — provide your own RPCs
+const EVM_CHAINS = {
+  ethereum:  { chainId: 1,     rpc: "https://eth.llamarpc.com" },
+  arbitrum:  { chainId: 42161, rpc: "https://arb1.arbitrum.io/rpc" },
+  base:      { chainId: 8453,  rpc: "https://mainnet.base.org" },
+  polygon:   { chainId: 137,   rpc: "https://polygon-rpc.com" },
+  bsc:       { chainId: 56,    rpc: "https://bsc-dataseed1.binance.org" },
+  optimism:  { chainId: 10,    rpc: "https://mainnet.optimism.io" },
+};
+
+// sendEvmNativeTokenAutonomous(to, valueWei, rpcEndpoint, chainId, ?quoteId)
+await menese.sendEvmNativeTokenAutonomous(
+  "0xRecipient", amountWei, EVM_CHAINS.arbitrum.rpc, BigInt(42161), []
+);
+```
+
+Free public RPCs work for testing. For production, use Alchemy, Infura, or
+chain-specific premium RPCs for better reliability.
+
+---
+
 ## Chain-Specific Setup
 
 ### Solana — Associated Token Accounts (ATAs)
@@ -154,7 +188,11 @@ dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister \
 Before receiving SPL tokens, create the ATA (one-time per token, ~0.002 SOL rent):
 
 ```typescript
-await menese.createMySolanaAtaForMint("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"); // USDC
+// createMySolanaAtaForMint takes 2 params: mint address + ATA address
+await menese.createMySolanaAtaForMint(mintBase58, ataBase58);
+
+// Get your ATA address first
+const ata = await menese.getMySolanaAta("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 ```
 
 Native SOL does **not** need an ATA — only SPL tokens (USDC, USDT, BONK, etc.).
@@ -173,6 +211,38 @@ EVM, ICP, SUI, Cardano, Bitcoin, TON — no setup needed. Tokens work automatica
 
 ---
 
+## Important: Correct Field Names
+
+Address types return records with chain-specific field names. Using the wrong
+field will cause runtime errors:
+
+| Chain | Correct Field | Wrong (will fail) |
+|-------|--------------|-------------------|
+| EVM | `evmAddress` | `address` |
+| SUI | `suiAddress` | `address` |
+| TON | `bounceable` / `nonBounceable` | `address` |
+| Cardano | `bech32Address` | `address` |
+| Bitcoin | `bech32Address` | (returns record, not text) |
+| Litecoin | `bech32Address` | (returns record, not text) |
+| Thorchain | `bech32Address` | `address` |
+| Tron | `base58Address` | `base58` |
+| NEAR | `implicitAccountId` | `accountId` |
+
+---
+
+## Bridge (ETH ↔ Solana)
+
+Both directions are supported:
+
+| Method | Direction | Speed | Tokens | Chains |
+|--------|-----------|-------|--------|--------|
+| **Ultrafast** | ETH → SOL | ~30s | ETH, USDC | ETH/ARB/BASE → SOL |
+| **CCTP** | ETH → SOL | ~15min | USDC only | ETH/ARB/BASE/OP/POLY → SOL |
+| **quickSolToEth** | SOL → ETH | ~15min | SOL | SOL → ETH |
+| **quickUsdcBridgeSolToEth** | SOL → ETH | ~15min | USDC | SOL → ETH |
+
+---
+
 ## Developer Key & Billing
 
 Register once to get your API key. All operations from your app bill your developer account:
@@ -182,15 +252,6 @@ Register once to get your API key. All operations from your app bill your develo
 dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister \
   '(principal "YOUR-CANISTER-ID", "MyAppName")'
 # Returns: msk_a7f3c291e5b8d4f7...
-```
-
-```typescript
-// Validate a key
-const valid = await menese.validateDeveloperKey("msk_a7f3c291e5b8d4f7...");
-
-// Check your account balance
-const account = await menese.getMyGatewayAccount();
-console.log("Credits:", account.credits);
 ```
 
 Deposit credits: Transfer ckBTC/ICP/ckETH to the MeneseSDK canister principal with ICRC-2.
@@ -209,19 +270,6 @@ RPCs — your own will be faster and more reliable.
 | Signing & sending transactions | Transaction history |
 | DEX swaps & bridges | Token metadata |
 | Developer billing & key management | Real-time price feeds |
-
----
-
-## Bridge (ETH → Solana)
-
-Two methods available:
-
-| Method | Speed | Tokens | Chains |
-|--------|-------|--------|--------|
-| **Ultrafast** | ~30s | ETH, USDC | ETH/ARB/BASE → SOL |
-| **CCTP** | ~15min | USDC only | ETH/ARB/BASE → SOL |
-
-**Note:** Only ETH/EVM → Solana direction is supported. SOL → ETH bridging is still in testing.
 
 ---
 

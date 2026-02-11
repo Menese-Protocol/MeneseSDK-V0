@@ -3,9 +3,14 @@
 /// What this does:
 ///   1. Gets your canister's derived wallet addresses on every chain
 ///   2. Checks balances on SOL and ICP
-///   3. Sends SOL to an address
+///   3. Sends SOL, ICP, BTC, and ETH
 ///
 /// Setup: Register your canister first (see README.md)
+///
+/// IMPORTANT: Field names must match the .did exactly:
+///   EVM → evmAddress (not "address")
+///   Bitcoin/Litecoin → bech32Address (returns AddressInfo record, not Text)
+///   SUI → suiAddress, Cardano → bech32Address, TON → bounceable/nonBounceable
 ///
 /// Tested: Feb 11, 2026 on mainnet
 
@@ -25,11 +30,27 @@ actor BasicIntegration {
     solana : Text;
     evm : Text;
     bitcoin : Text;
+    sui : Text;
+    xrp : Text;
+    cardano : Text;
+    ton : Text;
   } {
     let sol = await menese.getMySolanaAddress();
     let evm = await menese.getMyEvmAddress();
     let btc = await menese.getMyBitcoinAddress();
-    { solana = sol.address; evm = evm.address; bitcoin = btc };
+    let sui = await menese.getMySuiAddress();
+    let xrp = await menese.getMyXrpAddress();
+    let cardano = await menese.getMyCardanoAddress();
+    let ton = await menese.getMyTonAddress();
+    {
+      solana = sol.address;
+      evm = evm.evmAddress;           // NOT "address" — field is "evmAddress"
+      bitcoin = btc.bech32Address;     // NOT Text — returns AddressInfo record
+      sui = sui.suiAddress;            // NOT "address" — field is "suiAddress"
+      xrp = xrp.classicAddress;
+      cardano = cardano.bech32Address; // NOT "address" — field is "bech32Address"
+      ton = ton.nonBounceable;         // NOT "address" — use bounceable or nonBounceable
+    };
   };
 
   // ── Get individual addresses (FREE) ──────────────────────
@@ -40,11 +61,12 @@ actor BasicIntegration {
 
   public shared func getEvmAddress() : async Text {
     let info = await menese.getMyEvmAddress();
-    info.address;  // Same address for ETH, ARB, BASE, POLY, BNB, OP
+    info.evmAddress;  // Same address for ETH, ARB, BASE, POLY, BNB, OP
   };
 
   public shared func getBitcoinAddress() : async Text {
-    await menese.getMyBitcoinAddress();
+    let info = await menese.getMyBitcoinAddress();
+    info.bech32Address;  // Returns AddressInfo record, not Text
   };
 
   // ── Check balances (FREE) ────────────────────────────────
@@ -62,29 +84,36 @@ actor BasicIntegration {
   };
 
   // ── Send SOL ($0.05) ─────────────────────────────────────
-  // Sends SOL from your canister's derived Solana address.
-  // Make sure you have SOL in that address first!
+  // Returns: Result<Text, Text> — ok = txHash
   public shared func sendSol(toAddress : Text, lamports : Nat64) : async Result.Result<Text, Text> {
     await menese.sendSolTransaction(toAddress, lamports);
   };
 
   // ── Send ICP ($0.05) ─────────────────────────────────────
-  public shared func sendIcp(to : Principal, e8s : Nat64) : async Result.Result<Text, Text> {
+  // Returns: Result<SendICPResult, Text>
+  //   SendICPResult = { amount, blockHeight, fee, from, to }
+  public shared func sendIcp(to : Principal, e8s : Nat64) : async Result.Result<Menese.SendICPResult, Text> {
     await menese.sendICP(to, e8s);
   };
 
   // ── Send ETH on any EVM chain ($0.05) ────────────────────
-  // chain: "ethereum" | "arbitrum" | "base" | "polygon" | "bsc" | "optimism"
+  // NOTE: Requires 5 params: to, valueWei, rpcEndpoint, chainId, quoteId?
+  // You must provide your own RPC endpoint for the target chain.
+  // Returns: Result<SendResultEvm, Text>
+  //   SendResultEvm = { expectedTxHash, nonce, senderAddress, note }
   public shared func sendEvm(
-    chain : Text,
     toAddress : Text,
-    amountWei : Text,
-  ) : async Result.Result<{ txHash : Text }, Text> {
-    await menese.sendEvmNativeTokenAutonomous(chain, toAddress, amountWei, null);
+    amountWei : Nat,
+    rpcEndpoint : Text,    // Your RPC (e.g., "https://arb1.arbitrum.io/rpc")
+    chainId : Nat,         // Chain ID (1=ETH, 42161=ARB, 8453=BASE, etc.)
+  ) : async Result.Result<Menese.SendResultEvm, Text> {
+    await menese.sendEvmNativeTokenAutonomous(toAddress, amountWei, rpcEndpoint, chainId, null);
   };
 
   // ── Send BTC ($0.05) ─────────────────────────────────────
-  public shared func sendBtc(toAddress : Text, satoshis : Nat64) : async Result.Result<Text, Text> {
+  // Returns: Result<SendResultBtcLtc, Text>
+  //   SendResultBtcLtc = { txid, amount, fee, senderAddress, recipientAddress, note }
+  public shared func sendBtc(toAddress : Text, satoshis : Nat64) : async Result.Result<Menese.SendResultBtcLtc, Text> {
     await menese.sendBitcoin(toAddress, satoshis);
   };
 

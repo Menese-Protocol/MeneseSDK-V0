@@ -163,6 +163,9 @@ actor MerchantPayments {
   };
 
   // ── Sweep paid invoices to treasury ────────────────────────
+  // sendSolTransaction returns Result<Text, Text> (ok = txHash)
+  // sendICP returns Result<SendICPResult, Text> (ok = { amount, blockHeight, fee, from, to })
+  // We normalize both to Result<Text, Text> for the caller.
   public shared func sweepToTreasury(invoiceId : Text) : async Result.Result<Text, Text> {
     switch (invoices.get(invoiceId)) {
       case null { #err("Invoice not found") };
@@ -171,22 +174,32 @@ actor MerchantPayments {
           return #err("Invoice not in Paid status");
         };
 
-        let result = switch (invoice.chain) {
+        // Handle each chain separately because return types differ
+        let sweepResult : Result.Result<Text, Text> = switch (invoice.chain) {
           case (#SOL) {
             if (solTreasury == "") return #err("SOL treasury not set");
             // Keep 0.01 SOL for rent
             let sweepAmount = invoice.amountSmallest - 10_000_000;
+            // sendSolTransaction returns Result<Text, Text> — ok = txHash
             await menese.sendSolTransaction(solTreasury, sweepAmount);
           };
           case (#ICP) {
             if (icpTreasury == "") return #err("ICP treasury not set");
             let sweepAmount = invoice.amountSmallest - 100_000; // Keep 0.001 ICP for fees
-            await menese.sendICP(Principal.fromText(icpTreasury), sweepAmount);
+            // sendICP returns Result<SendICPResult, Text>
+            //   SendICPResult = { amount, blockHeight, fee, from, to }
+            let icpResult = await menese.sendICP(Principal.fromText(icpTreasury), sweepAmount);
+            switch (icpResult) {
+              case (#ok(receipt)) {
+                #ok("Block: " # Nat64.toText(receipt.blockHeight) # " | Fee: " # Nat64.toText(receipt.fee));
+              };
+              case (#err(e)) { #err(e) };
+            };
           };
         };
 
-        switch (result) {
-          case (#ok(txHash)) {
+        switch (sweepResult) {
+          case (#ok(info)) {
             // Mark as swept
             let updated : Invoice = {
               id = invoice.id;
@@ -199,7 +212,7 @@ actor MerchantPayments {
               paidAt = invoice.paidAt;
             };
             invoices.put(invoiceId, updated);
-            #ok(txHash);
+            #ok(info);
           };
           case (#err(e)) { #err(e) };
         };
@@ -229,6 +242,7 @@ actor MerchantPayments {
   };
 
   // Get payment addresses for display on checkout page
+  // Each getMyXxxAddress returns a record — use the correct field name!
   public shared func getPaymentAddresses() : async {
     solana : Text;
     evm : Text;
@@ -237,7 +251,11 @@ actor MerchantPayments {
     let sol = await menese.getMySolanaAddress();
     let evm = await menese.getMyEvmAddress();
     let btc = await menese.getMyBitcoinAddress();
-    { solana = sol.address; evm = evm.address; bitcoin = btc };
+    {
+      solana = sol.address;           // SolanaAddressInfo.address
+      evm = evm.evmAddress;           // EvmAddressInfo.evmAddress (NOT "address")
+      bitcoin = btc.bech32Address;    // AddressInfo.bech32Address (NOT Text)
+    };
   };
 
   // ── Helpers ────────────────────────────────────────────────

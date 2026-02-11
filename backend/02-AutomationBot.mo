@@ -99,8 +99,11 @@ actor AutomationBot {
     };
 
     // 3. Swap SOL → USDC on Raydium
-    // Keep 0.05 SOL for rent/fees
-    let swapAmount = balance - 50_000_000;
+    // swapRaydiumApiUser takes 8 params: inputMint, outputMint, amount, slippageBps,
+    //   wrapSol, unwrapSol, inputAta?, outputAta?
+    // Returns: RaydiumApiSwapResult (flat record, NOT variant)
+    //   { inputAmount, outputAmount, priceImpactPct, txSignature }
+    let swapAmount = balance - 50_000_000; // Keep 0.05 SOL for rent/fees
     addLog("swap", "Swapping " # Nat64.toText(swapAmount) # " lamports → USDC", true);
 
     let swapResult = await menese.swapRaydiumApiUser(
@@ -108,20 +111,19 @@ actor AutomationBot {
       USDC_MINT,
       swapAmount,
       SLIPPAGE_BPS,
+      true,     // wrapSol: input is native SOL
+      false,    // unwrapSol: output is USDC not SOL
+      null,     // inputAta: auto-detect
+      null,     // outputAta: auto-detect
     );
 
-    switch (swapResult) {
-      case (#ok(result)) {
-        addLog("swap", "Swap success! TX: " # result.txHash, true);
+    // RaydiumApiSwapResult is a flat record (NOT a variant with #ok/#err)
+    addLog("swap", "Swap success! TX: " # swapResult.txSignature #
+      " | Out: " # swapResult.outputAmount, true);
 
-        // 4. Optional: Sweep USDC to treasury
-        // Note: You'd need to check USDC balance and transfer SPL tokens
-        // This is left as an exercise — use transferSplToken for SPL sends
-      };
-      case (#err(e)) {
-        addLog("swap", "Swap failed: " # e, false);
-      };
-    };
+    // 4. Optional: Sweep USDC to treasury
+    // Use transferSplToken(amount, sourceAta, destAta) for SPL sends
+    // Note: You need ATA addresses, not wallet addresses
   };
 
   // ── Timer setup ────────────────────────────────────────────

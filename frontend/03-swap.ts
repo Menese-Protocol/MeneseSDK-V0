@@ -13,7 +13,7 @@
  *
  * IMPORTANT — Chain-specific prerequisites:
  *   - Solana: You need ATAs (Associated Token Accounts) for SPL tokens.
- *     Call createMySolanaAtaForMint(mintAddress) before swapping to a new token.
+ *     Call createMySolanaAtaForMint(mintBase58, ataBase58) before swapping to a new token.
  *   - XRP: You need trustlines for non-XRP tokens.
  *     Call xrpSetTrustline(currency, issuer, limit) before receiving tokens.
  *   - SUI/EVM/ICP/Cardano: No special setup needed.
@@ -30,16 +30,21 @@ import { createMeneseActor } from "./menese-config";
 // PREREQUISITE: Before swapping to a new SPL token for the first time,
 // you need an Associated Token Account (ATA) for that token mint:
 //
-//   await menese.createMySolanaAtaForMint(USDC_MINT);
+//   await menese.createMySolanaAtaForMint(mintBase58, ataBase58);
 //
 // This creates the ATA on-chain so your wallet can hold that token.
 // Only needed once per token. SOL doesn't need an ATA.
 
+// swapRaydiumApiUser has 8 params: inputMint, outputMint, amount, slippageBps,
+// wrapSol, unwrapSol, inputAta?, outputAta?
+// Returns: RaydiumApiSwapResult = { inputAmount, outputAmount, priceImpactPct, txSignature }
 async function swapOnRaydium(
   inputMint: string,     // Input token mint address
   outputMint: string,    // Output token mint address
   amountIn: number,      // Amount in input token's smallest unit
   slippageBps: number,   // Slippage tolerance (100 = 1%)
+  wrapSol: boolean = false,   // Set true if swapping native SOL (wraps to wSOL)
+  unwrapSol: boolean = false, // Set true if receiving SOL (unwraps wSOL)
 ) {
   const menese = await createMeneseActor();
 
@@ -49,42 +54,56 @@ async function swapOnRaydium(
     outputMint,
     BigInt(amountIn),
     BigInt(slippageBps),
+    wrapSol,
+    unwrapSol,
+    [],   // inputAta: auto-detect
+    [],   // outputAta: auto-detect
   ) as any;
 
-  if ("ok" in result) {
-    console.log("Swap TX:", result.ok.txHash);
-    console.log(`Explorer: https://solscan.io/tx/${result.ok.txHash}`);
-  } else {
-    console.error("Swap failed:", result.err);
-  }
+  // Direct record (NOT a variant with ok/err)
+  console.log("Swap TX:", result.txSignature);
+  console.log("Input:", result.inputAmount, "→ Output:", result.outputAmount);
+  console.log("Price impact:", result.priceImpactPct);
+  console.log(`Explorer: https://solscan.io/tx/${result.txSignature}`);
   return result;
 }
 
 // ══════════════════════════════════════════════════════════════
 // 2. UNISWAP V3 (EVM chains)
 // ══════════════════════════════════════════════════════════════
+// swapTokens takes 7 params: quoteId, fromSymbol, toSymbol, amountIn, slippageBps,
+//   useFeeOnTransfer, rpcEndpoint
+// Returns: { ok: { expectedTxHash, approvalTxHash?, nonce, note, path, ... }, err: text }
+//
+// NOTE: For EVM L2s (Arbitrum, Base, Polygon, BSC, Optimism) you must
+// provide your own RPC endpoint — free public RPCs like Alchemy, Infura,
+// or chain-specific ones work fine.
 
 async function swapOnUniswap(
-  chain: string,         // "ethereum" | "arbitrum" | "base" | "polygon" | "bsc" | "optimism"
-  tokenIn: string,       // Input token contract (use "native" for ETH/MATIC/BNB)
-  tokenOut: string,      // Output token contract
-  amountIn: string,      // Amount in smallest unit as string
+  quoteId: string,       // Get a quote first with getTokenQuote, use returned ID
+  fromToken: string,     // Input token symbol or address
+  toToken: string,       // Output token symbol or address
+  amountIn: bigint,      // Amount in smallest unit
   slippageBps: number,   // Slippage tolerance (100 = 1%)
+  rpcEndpoint: string,   // Your RPC endpoint for the target chain
 ) {
   const menese = await createMeneseActor();
 
-  console.log(`Swapping on ${chain}: ${tokenIn} → ${tokenOut}...`);
+  console.log(`Swapping on Uniswap V3: ${fromToken} → ${toToken}...`);
   const result = await menese.swapTokens(
-    chain,
-    "uniswap_v3",
-    tokenIn,
-    tokenOut,
+    quoteId,
+    fromToken,
+    toToken,
     amountIn,
     BigInt(slippageBps),
+    false,          // useFeeOnTransfer: true for rebase/tax tokens
+    rpcEndpoint,
   ) as any;
 
   if ("ok" in result) {
-    console.log("Swap TX:", result.ok.txHash);
+    console.log("Swap TX:", result.ok.expectedTxHash);
+    console.log("Nonce:", result.ok.nonce.toString());
+    console.log("Path:", result.ok.pathSymbols.join(" → "));
   } else {
     console.error("Swap failed:", result.err);
   }
@@ -95,25 +114,34 @@ async function swapOnUniswap(
 // 3. ICPSwap + KongSwap (ICP)
 // ══════════════════════════════════════════════════════════════
 // Routes to the DEX with the best price automatically.
+// executeICPDexSwap takes a SwapRequest record:
+//   { tokenIn, tokenOut, amountIn, minAmountOut, slippagePct, preferredDex? }
+// Returns: { ok: SwapResultIcp, err: text }
 
 async function swapOnICPDex(
   tokenIn: string,       // Token canister ID (e.g., "ryjl3-tyaaa-aaaaa-aaaba-cai" for ICP)
   tokenOut: string,      // Token canister ID
-  amountIn: number,      // Amount in token's smallest unit
-  minAmountOut: number,  // Minimum acceptable output (slippage protection)
+  amountIn: bigint,      // Amount in token's smallest unit
+  minAmountOut: bigint,  // Minimum acceptable output (slippage protection)
+  slippagePct: number,   // Slippage as percentage (e.g., 1.0 = 1%)
 ) {
   const menese = await createMeneseActor();
 
   console.log(`Swapping on ICP DEX: ${tokenIn} → ${tokenOut}...`);
-  const result = await menese.executeICPDexSwap(
+  const result = await menese.executeICPDexSwap({
     tokenIn,
     tokenOut,
-    BigInt(amountIn),
-    BigInt(minAmountOut),
-  ) as any;
+    amountIn,
+    minAmountOut,
+    slippagePct,
+    preferredDex: [],    // auto-route to best DEX
+  }) as any;
 
   if ("ok" in result) {
-    console.log("Swap complete! Amount out:", result.ok.amountOut.toString());
+    console.log("Swap complete!");
+    console.log("Amount in:", result.ok.amountIn.toString());
+    console.log("Amount out:", result.ok.amountOut.toString());
+    console.log("DEX used:", "ICPSwap" in result.ok.dex ? "ICPSwap" : "KongSwap");
   } else {
     console.error("Swap failed:", result.err);
   }
@@ -126,6 +154,7 @@ async function swapOnICPDex(
 // Uses Cetus aggregator for best routing on SUI.
 // Get a quote first, then execute with the quoted minAmountOut.
 
+// getSuiSwapQuote returns: opt { amountIn, amountOut, estimatedGas, priceImpact, routerData }
 async function getSuiQuote(
   fromToken: string,
   toToken: string,
@@ -154,6 +183,7 @@ async function getSuiQuote(
   return null;
 }
 
+// executeSuiSwap returns: SwapResultSui = { success, txDigest, amountOut, error? }
 async function swapOnCetus(
   fromToken: string,     // Token type (e.g., "0x2::sui::SUI")
   toToken: string,       // Token type (e.g., USDC on SUI)
@@ -171,12 +201,13 @@ async function swapOnCetus(
     minAmountOut,
   ) as any;
 
+  // Direct record (NOT a variant)
   if (result.success) {
     console.log("Swap TX:", result.txDigest);
     console.log("Amount out:", result.amountOut);
     console.log(`Explorer: https://suiscan.xyz/mainnet/tx/${result.txDigest}`);
   } else {
-    console.error("Swap failed:", result.error);
+    console.error("Swap failed:", result.error?.[0] || "Unknown error");
   }
   return result;
 }
@@ -186,6 +217,7 @@ async function swapOnCetus(
 // ══════════════════════════════════════════════════════════════
 // Cardano's largest DEX. Get a quote first to see the expected output.
 
+// getMinswapQuote returns: { ok: { amount_in, amount_out, min_amount_out, avg_price_impact, success }, err: text }
 async function getMinswapQuote(
   tokenIn: string,       // Token identifier (e.g., "lovelace" for ADA)
   tokenOut: string,      // Token identifier (policy_id.token_name)
@@ -214,6 +246,7 @@ async function getMinswapQuote(
   return null;
 }
 
+// executeMinswapSwap returns: Result = { ok: text (txHash), err: text }
 async function swapOnMinswap(
   tokenIn: string,       // Token identifier
   tokenOut: string,      // Token identifier
@@ -252,6 +285,8 @@ async function swapOnMinswap(
 //
 // Trustlines tell the network you accept that token from that issuer.
 
+// xrpSwap takes: (destAmount: TokenAmount, sendMax: TokenAmount, paths: text, slippageBps: nat)
+// Returns: SwapResultXrp = { success, txHash, explorerUrl, message, sourceAmount, destinationAmount }
 async function swapOnXrpDex(
   // What you want to receive
   destCurrency: string,    // e.g., "USD"
@@ -276,10 +311,13 @@ async function swapOnXrpDex(
     BigInt(slippageBps),
   ) as any;
 
+  // Direct record (NOT a variant)
   if (result.success) {
-    console.log("Swap TX ID:", result.txId.toString());
+    console.log("Swap TX:", result.txHash);
+    console.log("Explorer:", result.explorerUrl);
+    console.log(`${result.sourceAmount} → ${result.destinationAmount}`);
   } else {
-    console.error("Swap failed");
+    console.error("Swap failed:", result.message);
   }
   return result;
 }
@@ -318,28 +356,40 @@ const TOKENS = {
 
 async function main() {
   // 1. Swap 0.1 SOL → USDC on Raydium (1% slippage)
+  //    wrapSol=true because input is native SOL
   await swapOnRaydium(
     TOKENS.SOL_NATIVE,
     TOKENS.USDC_SOL,
     100_000_000,  // 0.1 SOL in lamports
     100,          // 1% slippage
+    true,         // wrapSol: input is native SOL
+    false,        // unwrapSol: output is USDC not SOL
   );
 
-  // 2. Swap ETH → USDC on Arbitrum (0.5% slippage)
-  await swapOnUniswap(
-    "arbitrum",
-    "native",
-    TOKENS.USDC_ETH,
-    "1000000000000000",  // 0.001 ETH in wei
-    50,
-  );
+  // 2. Swap ETH → USDC on Arbitrum (need quote first, then swap)
+  //    NOTE: You must provide your own RPC endpoint for EVM chains
+  const menese = await createMeneseActor();
+  const quote = await menese.getTokenQuote(
+    "ETH", "USDC", BigInt("1000000000000000"), "https://arb1.arbitrum.io/rpc"
+  ) as any;
+  if ("ok" in quote) {
+    await swapOnUniswap(
+      "arb-quote-id",        // Use quote ID from your system
+      "ETH",
+      "USDC",
+      BigInt("1000000000000000"),  // 0.001 ETH in wei
+      50,                          // 0.5% slippage
+      "https://arb1.arbitrum.io/rpc",
+    );
+  }
 
   // 3. Swap 1 ICP → ckBTC on ICP DEX (routes to best of ICPSwap/KongSwap)
   await swapOnICPDex(
     TOKENS.ICP_LEDGER,
     TOKENS.CKBTC_LEDGER,
-    100_000_000,  // 1 ICP in e8s
-    1,
+    BigInt(100_000_000),  // 1 ICP in e8s
+    BigInt(1),            // min 1 sat ckBTC out
+    1.0,                  // 1% slippage
   );
 
   // 4. Swap SUI → USDC on Cetus (get quote first)

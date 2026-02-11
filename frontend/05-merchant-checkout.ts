@@ -85,14 +85,14 @@ async function getPaymentAddresses(): Promise<PaymentAddresses> {
 
   const addresses = {
     solana: (sol as any).address,
-    evm: (evm as any).address,
-    bitcoin: btc as string,
+    evm: (evm as any).evmAddress,             // NOT "address" — field is "evmAddress"
+    bitcoin: (btc as any).bech32Address,       // NOT Text — returns AddressInfo record
     icp: "Pay via ICP ledger transfer",
   };
 
   console.log("Payment addresses for this user:");
   console.log("  SOL:", addresses.solana);
-  console.log("  ETH:", addresses.evm);
+  console.log("  ETH:", addresses.evm);        // Same address for all 6 EVM chains
   console.log("  BTC:", addresses.bitcoin);
 
   return addresses;

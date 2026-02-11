@@ -2,7 +2,7 @@
 
 Turn your ClawdBot instance into a multi-chain crypto wallet bot.
 Users interact via WhatsApp — ClawdBot handles addresses, balances, sends,
-and swaps across 15 chains using MeneseSDK.
+swaps, and bridges across 19 chains using MeneseSDK.
 
 ## Two Integration Approaches
 
@@ -67,6 +67,36 @@ No canister deployment needed — just dfx and your identity.
 
 ---
 
+## EVM Chains — Bring Your Own RPC
+
+**For all EVM chains (ETH, Arbitrum, Base, Polygon, BSC, Optimism), you must
+provide your own RPC endpoint.** MeneseSDK does NOT manage EVM RPC connections —
+this keeps costs low and gives you control over reliability and rate limits.
+
+```
+# In WalletBot.mo: call setEvmRpc() for each chain
+dfx canister call WalletBot setEvmRpc '("ethereum", "https://eth.llamarpc.com", 1)' --network ic
+dfx canister call WalletBot setEvmRpc '("arbitrum", "https://arb1.arbitrum.io/rpc", 42161)' --network ic
+
+# In wallet_commands.py: edit the EVM_RPCS dict at the top of the file
+```
+
+Common EVM chains and their IDs:
+
+| Chain | Chain ID | Free Public RPC |
+|-------|----------|----------------|
+| Ethereum | 1 | `https://eth.llamarpc.com` |
+| Arbitrum | 42161 | `https://arb1.arbitrum.io/rpc` |
+| Base | 8453 | `https://mainnet.base.org` |
+| Polygon | 137 | `https://polygon-rpc.com` |
+| BSC | 56 | `https://bsc-dataseed1.binance.org` |
+| Optimism | 10 | `https://mainnet.optimism.io` |
+
+Free public RPCs work fine for testing. For production, use Alchemy, Infura,
+or chain-specific premium RPCs for better reliability and throughput.
+
+---
+
 ## Performance Tip: Use Your Own RPC for Balance Queries
 
 **Balance queries through MeneseSDK go through the canister's shared RPC
@@ -84,22 +114,6 @@ own RPC. This is free and much faster.
 
 **MeneseSDK is best for:** address derivation, signing, sending, swapping, bridging.
 **Your own RPC is best for:** read-only balance checks at scale (faster, free).
-
-```typescript
-// Fast: Query SOL balance with your own RPC
-const connection = new Connection("https://your-rpc.helius.xyz");
-const balance = await connection.getBalance(new PublicKey(myAddress));
-
-// Use MeneseSDK for address derivation (one-time, cache it)
-const addr = await menese.getMySolanaAddress();
-// Then use addr.address with your own RPC for all future balance checks
-```
-
-```python
-# Fast: Query ICP balance directly (no MeneseSDK needed)
-# dfx ledger balance --network ic
-# Or call the ICP ledger canister directly
-```
 
 ---
 
@@ -121,16 +135,27 @@ dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister \
 # Returns: msk_xxxxx... (save this key)
 ```
 
-### 3. Configure ClawdBot system prompt
+### 3. Configure EVM RPCs
+
+```bash
+# Set up RPC endpoints for each EVM chain you want to support
+dfx canister call WalletBot setEvmRpc '("ethereum", "https://eth.llamarpc.com", 1)' --network ic
+dfx canister call WalletBot setEvmRpc '("arbitrum", "https://arb1.arbitrum.io/rpc", 42161)' --network ic
+dfx canister call WalletBot setEvmRpc '("base", "https://mainnet.base.org", 8453)' --network ic
+```
+
+### 4. Configure ClawdBot system prompt
 
 Add this to your ClawdBot's context so it knows how to use the wallet:
 
 ```
-You control a crypto wallet canister on ICP. Call it with dfx:
+You control a crypto wallet canister on ICP (19 chains). Call it with dfx:
 - Addresses: dfx canister call CANISTER_ID getAddresses --network ic
 - Balance: dfx canister call CANISTER_ID checkBalance '("sol")' --network ic
 - Send: dfx canister call CANISTER_ID sendTokens '("sol", 1000000, "ADDR")' --network ic
-- Account: dfx canister call CANISTER_ID getBillingStatus --network ic
+- Swap: dfx canister call CANISTER_ID swapSolana '("So111...", "EPjFW...", 500000000, 150, true, false)' --network ic
+
+Supported chains: sol, icp, btc, ltc, eth, arb, base, xrp, sui, ton, apt, near, trx, ada, cloak, rune
 ```
 
 ---
@@ -144,23 +169,67 @@ cp wallet_commands.py /root/.openclaw/workspace/
 chmod +x wallet_commands.py
 ```
 
-### 2. Test
+### 2. Configure EVM RPCs
+
+Edit the `EVM_RPCS` dict at the top of `wallet_commands.py` with your own RPC URLs.
+
+### 3. Test
 
 ```bash
-python3 wallet_commands.py addresses          # Get all 15 chain addresses
+python3 wallet_commands.py addresses          # Get all 19 chain addresses
 python3 wallet_commands.py balance sol         # Check SOL balance
-python3 wallet_commands.py account             # Check billing status
+python3 wallet_commands.py send sol 0.01 5xK2...abc  # Send SOL
+python3 wallet_commands.py swap So111...112 EPjFW...1v 500000000 150  # Raydium swap
 ```
 
-### 3. Configure ClawdBot system prompt
+### 4. Configure ClawdBot system prompt
 
 ```
-You can manage crypto wallets. Run these commands:
+You can manage crypto wallets (19 chains). Run these commands:
 - python3 wallet_commands.py addresses
-- python3 wallet_commands.py balance <chain>   (sol, icp, eth, btc, xrp, sui)
+- python3 wallet_commands.py balance <chain>
 - python3 wallet_commands.py send <chain> <amount> <address>
-- python3 wallet_commands.py account
+- python3 wallet_commands.py swap <input_mint> <output_mint> <amount> <slippage_bps>
+
+Send chains: sol, icp, btc, ltc, eth, arb, base, polygon, bsc, optimism, xrp, sui, ton, apt, near, trx, ada, cloak, rune
+Balance chains: sol, icp, xrp, sui, ethereum, arbitrum, base, polygon, bsc, optimism
 ```
+
+---
+
+## Important: Correct Field Names
+
+Address types return records with specific field names. Using the wrong field
+will cause runtime errors:
+
+| Chain | Correct Field | Wrong (will fail) |
+|-------|--------------|-------------------|
+| EVM | `evmAddress` | `address` |
+| SUI | `suiAddress` | `address` |
+| TON | `bounceable` / `nonBounceable` | `address` |
+| Cardano | `bech32Address` | `address` |
+| Bitcoin | `bech32Address` | (returns record, not text) |
+| Litecoin | `bech32Address` | (returns record, not text) |
+| Thorchain | `bech32Address` | `address` |
+| Tron | `base58Address` | `base58` |
+| NEAR | `implicitAccountId` | `accountId` |
+
+## Important: Return Types Differ by Chain
+
+Some send functions return variants (with `#ok`/`#err`) while others return
+flat records. **Getting this wrong will cause runtime errors:**
+
+| Function | Return Type |
+|----------|-------------|
+| `sendSolTransaction` | Variant `{ok: Text, err: Text}` |
+| `sendICP` | Variant `{ok: SendICPResult, err: Text}` |
+| `sendBitcoin` | Variant `{ok: SendResultBtcLtc, err: Text}` |
+| `sendLitecoin` | Variant `{ok: SendResult, err: Text}` (NOT BtcLtc!) |
+| `sendEvmNativeTokenAutonomous` | Variant `{ok: SendResultEvm, err: Text}` |
+| `sendSui`, `sendAptos` | Variant `{ok: SendResult, err: Text}` |
+| `sendXrpAutonomous` | **FLAT** `SendResultXrp` (check `.success`) |
+| `sendTonSimple` | **FLAT** `SendResultTon` (check `.success`) |
+| `swapRaydiumApiUser` | **FLAT** `RaydiumApiSwapResult` |
 
 ---
 
@@ -175,7 +244,7 @@ Bot:  Your multi-chain addresses:
         Ethereum: 0x7f3d...  (same for ARB/BASE/POLY/BNB/OP)
         Bitcoin:  bc1q...
         ICP:      aaaaa-bbbbb-...
-        ... (15 chains total)
+        ... (19 chains total)
 
 User: "Check my SOL balance"
 Bot:  SOL balance: 2.45 SOL
@@ -183,6 +252,10 @@ Bot:  SOL balance: 2.45 SOL
 User: "Send 0.5 SOL to 5xK2abc..."
 Bot:  Sending 0.5 SOL (500,000,000 lamports)...
       TX: 4vJ7k... (view on solscan.io)
+
+User: "Swap 1 SOL to USDC"
+Bot:  Swapping 1,000,000,000 lamports → USDC on Raydium...
+      TX: 3kF8a... | Output: 149.85 USDC
 
 User: "How much does a send cost?"
 Bot:  Sends cost $0.05 per operation. Swaps are $0.075.
@@ -196,8 +269,8 @@ Bot:  Sends cost $0.05 per operation. Swaps are $0.075.
 | File | Approach | Purpose |
 |------|----------|---------|
 | `README.md` | Both | This guide |
-| `WalletBot.mo` | A (Canister) | ICP canister wrapping MeneseSDK |
-| `wallet_commands.py` | B (CLI) | Direct dfx commands from VPS |
+| `WalletBot.mo` | A (Canister) | ICP canister wrapping MeneseSDK (19 chains) |
+| `wallet_commands.py` | B (CLI) | Direct dfx commands from VPS (19 chains) |
 
 ## Pricing
 
@@ -207,7 +280,7 @@ Bot:  Sends cost $0.05 per operation. Swaps are $0.075.
 | Check balance | FREE | Optional (faster with own RPC) |
 | Send tokens | $0.05 | Yes (signing requires MeneseSDK) |
 | Swap (DEX) | $0.075 | Yes |
-| Bridge ETH→SOL | $0.10 | Yes |
+| Bridge ETH↔SOL | $0.10 | Yes |
 
 ## MeneseSDK Canister ID
 
