@@ -97,15 +97,45 @@ Address types return records with specific field names:
 
 **Mainnet:** `urs2a-ziaaa-aaaad-aembq-cai`
 
-## Billing
+## Developer Packages & Billing
+
+### Subscription Tiers
+
+| Tier | Actions/Month | Best For |
+|------|--------------|----------|
+| **Free** | 5 | Testing |
+| **Developer** | 1,000 | Small apps |
+| **Pro** | 5,000 | Production |
+| **Enterprise** | Unlimited | High-volume |
+
+### How Billing Works
 
 When your canister calls MeneseSDK, the caller is your canister's principal.
 If registered via `registerDeveloperCanister`, operations bill your developer
 account. Otherwise, the canister itself needs credits deposited.
 
-| Operation | Cost |
-|-----------|------|
-| Sign/Send | $0.05 |
-| Swap      | $0.075 |
-| Bridge    | $0.10 |
-| Query     | FREE |
+### Operation Pricing
+
+| Operation | Cost | Examples |
+|-----------|------|----------|
+| Sign/Send | $0.05 | sendSolTransaction, sendBitcoin, sendICP, sendEvmNativeTokenAutonomous |
+| Swap | $0.075 | swapRaydiumApiUser, swapTokens, executeICPDexSwap |
+| Bridge | $0.10 | quickUltrafastEthToSol, quickCctpBridge, quickSolToEth |
+| Query | FREE | getAddress, getBalance, getQuote, validateDeveloperKey |
+
+Payment accepted in: **ckBTC, ICP, ckETH** (via ICRC-2 approve+transferFrom).
+
+### Manage Your Account (from Motoko)
+
+```motoko
+// Check billing status
+let account = await menese.getMyGatewayAccount();
+// account.creditsMicroUsd, account.tier, account.actionsUsed, account.actionsRemaining
+
+// Get or regenerate developer key
+let key = await menese.getMyDeveloperKey();
+let newKey = await menese.regenerateDeveloperKey();
+
+// Deposit credits (from ICRC-2 approved tokens)
+let receipt = await menese.depositGatewayCredits("ckBTC", 100_000);
+```
