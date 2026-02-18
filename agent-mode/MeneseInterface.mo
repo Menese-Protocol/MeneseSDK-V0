@@ -259,6 +259,63 @@ module {
     kongswapQuote : ?SwapQuoteIcp;
   };
 
+  // ── ICP DEX LP Types ──────────────────────────────────────
+
+  public type TokenStandard = { #ICRC1; #ICRC2; #DIP20 };
+
+  public type DexToken = {
+    canisterId : Text; symbol : Text; name : Text; decimals : Nat8;
+    fee : Nat; standard : TokenStandard; logo : ?Text; category : ?Text;
+    availableOn : [DexId];
+  };
+
+  public type PoolInfo = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Symbol : Text; token1Symbol : Text; reserve0 : Nat; reserve1 : Nat;
+    fee : Nat; tvl : ?Nat; apr : ?Float; volume24h : ?Nat;
+  };
+
+  public type LPPosition = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Symbol : Text; token1Symbol : Text; liquidity : Nat;
+    token0Amount : Nat; token1Amount : Nat;
+    unclaimedFees : ?(Nat, Nat); valueUsd : ?Nat;
+  };
+
+  public type AddLiquidityRequest = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Amount : Nat; token1Amount : Nat; slippagePct : Float;
+  };
+
+  public type AddLiquidityResult = {
+    success : Bool; lpTokens : Nat; token0Used : Nat; token1Used : Nat;
+    poolId : Text; message : Text;
+  };
+
+  public type RemoveLiquidityRequest = {
+    poolId : Text; dex : DexId; lpTokens : Nat; slippagePct : Float;
+  };
+
+  public type RemoveLiquidityResult = {
+    success : Bool; token0Received : Nat; token1Received : Nat; message : Text;
+  };
+
+  public type ImpermanentLossRisk = { #Low; #Medium; #High };
+  public type RebalanceAction = { #Swap; #AddLiquidity; #RemoveLiquidity; #Compound };
+
+  public type RebalancePreferences = {
+    targetCategories : [Text]; riskTolerance : Text; minApy : ?Float;
+    maxImpermanentLoss : ?Float; autoCompound : Bool;
+  };
+
+  public type RebalanceRecommendation = {
+    id : Text; action : RebalanceAction; fromToken : Text; toToken : Text;
+    fromSymbol : Text; toSymbol : Text; amount : Nat; reason : Text;
+    estimatedApy : ?Float; currentApy : ?Float;
+    impermanentLossRisk : ImpermanentLossRisk; confidence : Float;
+    estimatedGasUsd : ?Float;
+  };
+
   public type SwapQuoteIcp = {
     amountIn : Nat;
     amountOut : Nat;
@@ -516,6 +573,10 @@ module {
     getCloakBalance : shared () -> async Result.Result<{ address : Text; balance : Nat64; utxoCount : Nat }, Text>;
     getTrxBalance : shared (Text) -> async Result.Result<Nat64, Text>;
     getICRC1Balance : shared (Text) -> async Result.Result<Nat, Text>;
+    getICPBalanceFor : shared (Principal) -> async Result.Result<Nat64, Text>;
+    getICRC1BalanceFor : shared (Principal, Text) -> async Result.Result<Nat, Text>;
+    getICRC1TokenInfo : shared (Text) -> async Result.Result<{ name : Text; symbol : Text; decimals : Nat8; fee : Nat; totalSupply : Nat }, Text>;
+    getSupportedICPTokens : shared query () -> async [{ name : Text; symbol : Text; canisterId : Text; type_ : Text; category : Text }];
     getMyTrc20Balance : shared (Text) -> async Result.Result<Nat, Text>;
 
     // Batch — get ALL native balances in one call (parallel fetch)
@@ -546,6 +607,7 @@ module {
     sendICRC1 : shared (to : Principal, amount : Nat, ledgerCanisterId : Text) -> async Result.Result<SendICRC1Result, Text>;
     transferFromICRC2 : shared (from : Principal, to : Principal, amount : Nat, ledgerCanisterId : Text) -> async Result.Result<{ amount : Nat; blockHeight : Nat; from : Principal; to : Principal; token : Text }, Text>;
     approveICRC2 : shared (spender : Principal, amount : Nat, expiresAt : ?Nat64, ledgerCanisterId : Text) -> async Result.Result<{ amount : Nat; blockHeight : Nat; spender : Principal; token : Text }, Text>;
+    getICRC2Allowance : shared (owner : Principal, spender : Principal, ledgerCanisterId : Text) -> async Result.Result<{ allowance : Nat; expiresAt : ?Nat64 }, Text>;
 
     // Bitcoin
     sendBitcoin : shared (toAddress : Text, amount : Nat64) -> async Result.Result<SendResultBtcLtc, Text>;
@@ -603,6 +665,16 @@ module {
 
     // ICPSwap + KongSwap (ICP) — routes to best price
     executeICPDexSwap : shared (SwapRequest) -> async Result.Result<SwapResultIcp, Text>;
+
+    // ICP DEX LP Management
+    getICPLPPositions : shared () -> async [LPPosition];
+    addICPLiquidity : shared (AddLiquidityRequest) -> async Result.Result<AddLiquidityResult, Text>;
+    removeICPLiquidity : shared (RemoveLiquidityRequest) -> async Result.Result<RemoveLiquidityResult, Text>;
+    getICPDexPools : shared () -> async [PoolInfo];
+    getICPDexTokens : shared () -> async [DexToken];
+
+    // ICP AI Rebalancer
+    getICPRebalanceRecommendations : shared (RebalancePreferences, [(Text, Nat)], ?[PoolInfo]) -> async [RebalanceRecommendation];
 
     // Cetus (SUI)
     executeSuiSwap : shared ({ #mainnet; #testnet; #devnet }, fromToken : Text, toToken : Text, amountIn : Text, minAmountOut : Text) -> async SwapResultSui;

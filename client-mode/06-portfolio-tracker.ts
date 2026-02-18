@@ -40,7 +40,7 @@ const CHAINS = [
   { id: "tron", name: "Tron", symbol: "TRX", decimals: 6, explorer: "https://tronscan.org/#/address/" },
   { id: "aptos", name: "Aptos", symbol: "APT", decimals: 8, explorer: "https://explorer.aptoslabs.com/account/" },
   { id: "near", name: "NEAR", symbol: "NEAR", decimals: 24, explorer: "https://nearblocks.io/address/" },
-  { id: "cloak", name: "CloakCoin", symbol: "CLOAK", decimals: 8, explorer: "" },
+  { id: "cloak", name: "CloakCoin", symbol: "CLOAK", decimals: 6, explorer: "" },
   { id: "thorchain", name: "THORChain", symbol: "RUNE", decimals: 8, explorer: "https://thorchain.net/address/" },
 ];
 

@@ -324,6 +324,10 @@ export const idlFactory = ({ IDL }: any) => {
     getCloakBalance: IDL.Func([], [IDL.Variant({ ok: BalanceInfo, err: IDL.Text })], []),
     getTrxBalance: IDL.Func([IDL.Text], [ResultNat64], []),       // address
     getICRC1Balance: IDL.Func([IDL.Text], [ResultNat], []),       // ledgerCanisterId
+    getICPBalanceFor: IDL.Func([IDL.Principal], [ResultNat64], []),
+    getICRC1BalanceFor: IDL.Func([IDL.Principal, IDL.Text], [ResultNat], []),
+    getICRC1TokenInfo: IDL.Func([IDL.Text], [IDL.Variant({ ok: IDL.Record({ name: IDL.Text, symbol: IDL.Text, decimals: IDL.Nat8, fee: IDL.Nat, totalSupply: IDL.Nat }), err: IDL.Text })], []),
+    getSupportedICPTokens: IDL.Func([], [IDL.Vec(IDL.Record({ name: IDL.Text, symbol: IDL.Text, canisterId: IDL.Text, type_: IDL.Text, category: IDL.Text }))], ["query"]),
     getMyTrc20Balance: IDL.Func([IDL.Text], [ResultNat], []),     // contractAddress
 
     // === SEND — ALL CHAINS ($0.05) ===
@@ -353,6 +357,14 @@ export const idlFactory = ({ IDL }: any) => {
     approveICRC2: IDL.Func(
       [IDL.Principal, IDL.Nat, IDL.Opt(IDL.Nat64), IDL.Text],
       [IDL.Variant({ ok: IDL.Record({ amount: IDL.Nat, blockHeight: IDL.Nat, spender: IDL.Principal, token: IDL.Text }), err: IDL.Text })], []
+    ),
+    getICRC2Allowance: IDL.Func(
+      [IDL.Principal, IDL.Principal, IDL.Text],  // owner, spender, ledgerCanisterId
+      [IDL.Variant({ ok: IDL.Record({ allowance: IDL.Nat, expiresAt: IDL.Opt(IDL.Nat64) }), err: IDL.Text })], []
+    ),
+    transferFromICRC2: IDL.Func(
+      [IDL.Principal, IDL.Principal, IDL.Nat, IDL.Text],  // from, to, amount, ledgerCanisterId
+      [IDL.Variant({ ok: IDL.Record({ amount: IDL.Nat, blockHeight: IDL.Nat, from: IDL.Principal, to: IDL.Principal, token: IDL.Text }), err: IDL.Text })], []
     ),
 
     // Bitcoin
@@ -439,6 +451,51 @@ export const idlFactory = ({ IDL }: any) => {
 
     // ICPSwap + KongSwap (ICP)
     executeICPDexSwap: IDL.Func([SwapRequest], [IDL.Variant({ ok: SwapResultIcp, err: IDL.Text })], []),
+
+    // ICP DEX LP Management
+    getICPLPPositions: IDL.Func([], [IDL.Vec(IDL.Record({
+      poolId: IDL.Text, dex: DexId, token0: IDL.Text, token1: IDL.Text,
+      token0Symbol: IDL.Text, token1Symbol: IDL.Text, liquidity: IDL.Nat,
+      token0Amount: IDL.Nat, token1Amount: IDL.Nat,
+      unclaimedFees: IDL.Opt(IDL.Tuple(IDL.Nat, IDL.Nat)),
+      valueUsd: IDL.Opt(IDL.Nat),
+    }))], []),
+    addICPLiquidity: IDL.Func(
+      [IDL.Record({ poolId: IDL.Text, dex: DexId, token0: IDL.Text, token1: IDL.Text, token0Amount: IDL.Nat, token1Amount: IDL.Nat, slippagePct: IDL.Float64 })],
+      [IDL.Variant({ ok: IDL.Record({ success: IDL.Bool, lpTokens: IDL.Nat, token0Used: IDL.Nat, token1Used: IDL.Nat, poolId: IDL.Text, message: IDL.Text }), err: IDL.Text })], []
+    ),
+    removeICPLiquidity: IDL.Func(
+      [IDL.Record({ poolId: IDL.Text, dex: DexId, lpTokens: IDL.Nat, slippagePct: IDL.Float64 })],
+      [IDL.Variant({ ok: IDL.Record({ success: IDL.Bool, token0Received: IDL.Nat, token1Received: IDL.Nat, message: IDL.Text }), err: IDL.Text })], []
+    ),
+    getICPDexPools: IDL.Func([], [IDL.Vec(IDL.Record({
+      poolId: IDL.Text, dex: DexId, token0: IDL.Text, token1: IDL.Text,
+      token0Symbol: IDL.Text, token1Symbol: IDL.Text, reserve0: IDL.Nat,
+      reserve1: IDL.Nat, fee: IDL.Nat, tvl: IDL.Opt(IDL.Nat),
+      apr: IDL.Opt(IDL.Float64), volume24h: IDL.Opt(IDL.Nat),
+    }))], []),
+    getICPDexTokens: IDL.Func([], [IDL.Vec(IDL.Record({
+      canisterId: IDL.Text, symbol: IDL.Text, name: IDL.Text,
+      decimals: IDL.Nat8, fee: IDL.Nat,
+      standard: IDL.Variant({ ICRC1: IDL.Null, ICRC2: IDL.Null, DIP20: IDL.Null }),
+      logo: IDL.Opt(IDL.Text), category: IDL.Opt(IDL.Text),
+      availableOn: IDL.Vec(DexId),
+    }))], []),
+    getICPRebalanceRecommendations: IDL.Func(
+      [
+        IDL.Record({ targetCategories: IDL.Vec(IDL.Text), riskTolerance: IDL.Text, minApy: IDL.Opt(IDL.Float64), maxImpermanentLoss: IDL.Opt(IDL.Float64), autoCompound: IDL.Bool }),
+        IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat)),  // tokenBalances
+        IDL.Opt(IDL.Vec(IDL.Record({ poolId: IDL.Text, dex: DexId, token0: IDL.Text, token1: IDL.Text, token0Symbol: IDL.Text, token1Symbol: IDL.Text, reserve0: IDL.Nat, reserve1: IDL.Nat, fee: IDL.Nat, tvl: IDL.Opt(IDL.Nat), apr: IDL.Opt(IDL.Float64), volume24h: IDL.Opt(IDL.Nat) }))),
+      ],
+      [IDL.Vec(IDL.Record({
+        id: IDL.Text, action: IDL.Variant({ Swap: IDL.Null, AddLiquidity: IDL.Null, RemoveLiquidity: IDL.Null, Compound: IDL.Null }),
+        fromToken: IDL.Text, toToken: IDL.Text, fromSymbol: IDL.Text, toSymbol: IDL.Text,
+        amount: IDL.Nat, reason: IDL.Text, estimatedApy: IDL.Opt(IDL.Float64),
+        currentApy: IDL.Opt(IDL.Float64),
+        impermanentLossRisk: IDL.Variant({ Low: IDL.Null, Medium: IDL.Null, High: IDL.Null }),
+        confidence: IDL.Float64, estimatedGasUsd: IDL.Opt(IDL.Float64),
+      }))], []
+    ),
 
     // Cetus (SUI)
     executeSuiSwap: IDL.Func(

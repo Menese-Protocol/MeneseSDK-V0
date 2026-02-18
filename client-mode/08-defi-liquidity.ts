@@ -8,9 +8,11 @@
  *   - removeLiquidity(tokenASymbol, tokenBSymbol, lpTokenAmount, slippageBps, rpcEndpoint, quoteId?)
  *
  * ICP Liquidity (ICPSwap + KongSwap):
- *   - addICPLiquidity(request: AddLiquidityRequest)
- *   - removeICPLiquidity(request: RemoveLiquidityRequest)
- *   - getICPLPPositions()
+ *   - addICPLiquidity(request: AddLiquidityRequest)    → { poolId, dex, token0, token1, token0Amount, token1Amount, slippagePct }
+ *   - removeICPLiquidity(request: RemoveLiquidityRequest) → { poolId, dex, lpTokens, slippagePct }
+ *   - getICPLPPositions()                              → [LPPosition]
+ *   - getICPDexPools()                                 → [PoolInfo]
+ *   - getICPDexTokens()                                → [DexToken]
  *
  * Cost: $0.10 per operation (sign + HTTP outcalls)
  *
@@ -174,40 +176,54 @@ async function removeTokenPairLiquidity(
 // ══════════════════════════════════════════════════════════════
 
 // ── View LP Positions ───────────────────────────────────────
+// LPPosition = { poolId, dex, token0, token1, token0Symbol, token1Symbol,
+//   liquidity, token0Amount, token1Amount, unclaimedFees?, valueUsd? }
 async function viewICPLPPositions() {
   const menese = await createMeneseActor();
 
   const positions = await menese.getICPLPPositions() as any[];
   console.log(`You have ${positions.length} LP positions on ICP DEXes:`);
   for (const pos of positions) {
-    console.log(`  Pool: ${pos.tokenA}/${pos.tokenB} | Shares: ${pos.shares}`);
+    const dex = "ICPSwap" in pos.dex ? "ICPSwap" : "KongSwap";
+    console.log(`  [${dex}] ${pos.token0Symbol}/${pos.token1Symbol} | LP tokens: ${pos.liquidity}`);
+    console.log(`    Underlying: ${pos.token0Amount} ${pos.token0Symbol} + ${pos.token1Amount} ${pos.token1Symbol}`);
+    if (pos.unclaimedFees?.[0]) {
+      console.log(`    Unclaimed fees: ${pos.unclaimedFees[0][0]} + ${pos.unclaimedFees[0][1]}`);
+    }
   }
   return positions;
 }
 
 // ── Add ICP DEX Liquidity ───────────────────────────────────
-// AddLiquidityRequest = { tokenA, tokenB, amountA, amountB, slippagePct, preferredDex? }
+// AddLiquidityRequest = { poolId, dex, token0, token1, token0Amount, token1Amount, slippagePct }
+// dex: { ICPSwap: null } or { KongSwap: null }
 async function addICPDexLiquidity(
-  tokenA: string,      // Token canister ID
-  tokenB: string,      // Token canister ID
-  amountA: bigint,
-  amountB: bigint,
+  poolId: string,        // Pool canister ID
+  dex: object,           // { ICPSwap: null } or { KongSwap: null }
+  token0: string,        // Token canister ID
+  token1: string,        // Token canister ID
+  token0Amount: bigint,
+  token1Amount: bigint,
   slippagePct: number,
 ) {
   const menese = await createMeneseActor();
 
   console.log("Adding liquidity to ICP DEX...");
   const result = await menese.addICPLiquidity({
-    tokenA,
-    tokenB,
-    amountA,
-    amountB,
+    poolId,
+    dex,
+    token0,
+    token1,
+    token0Amount,
+    token1Amount,
     slippagePct,
-    preferredDex: [],  // auto-route
   }) as any;
 
   if ("ok" in result) {
-    console.log("LP added! Shares:", result.ok.shares?.toString());
+    console.log("LP added! Tokens:", result.ok.lpTokens.toString());
+    console.log("Token0 used:", result.ok.token0Used.toString());
+    console.log("Token1 used:", result.ok.token1Used.toString());
+    console.log("Pool:", result.ok.poolId);
   } else {
     console.error("Add LP failed:", result.err);
   }
@@ -215,26 +231,25 @@ async function addICPDexLiquidity(
 }
 
 // ── Remove ICP DEX Liquidity ────────────────────────────────
-// RemoveLiquidityRequest = { tokenA, tokenB, shares, slippagePct, preferredDex? }
+// RemoveLiquidityRequest = { poolId, dex, lpTokens, slippagePct }
 async function removeICPDexLiquidity(
-  tokenA: string,
-  tokenB: string,
-  shares: bigint,
+  poolId: string,       // Pool canister ID
+  dex: object,          // { ICPSwap: null } or { KongSwap: null }
+  lpTokens: bigint,     // LP tokens to burn
   slippagePct: number,
 ) {
   const menese = await createMeneseActor();
 
   console.log("Removing liquidity from ICP DEX...");
   const result = await menese.removeICPLiquidity({
-    tokenA,
-    tokenB,
-    shares,
+    poolId,
+    dex,
+    lpTokens,
     slippagePct,
-    preferredDex: [],
   }) as any;
 
   if ("ok" in result) {
-    console.log("LP removed!");
+    console.log("LP removed! Got:", result.ok.token0Received.toString(), "+", result.ok.token1Received.toString());
   } else {
     console.error("Remove LP failed:", result.err);
   }
@@ -282,14 +297,24 @@ async function main() {
   // View existing LP positions
   await viewICPLPPositions();
 
-  // Add ICP + ckBTC liquidity
-  await addICPDexLiquidity(
-    ICP_LEDGER,
-    CKBTC_LEDGER,
-    BigInt(100_000_000),   // 1 ICP (8 decimals)
-    BigInt(10_000),        // 0.0001 ckBTC (8 decimals)
-    1.0,                    // 1% slippage
+  // First, discover available pools
+  const pools = await (await createMeneseActor()).getICPDexPools() as any[];
+  const icpBtcPool = pools.find((p: any) =>
+    p.token0Symbol === "ICP" && p.token1Symbol === "ckBTC"
   );
+
+  if (icpBtcPool) {
+    // Add ICP + ckBTC liquidity to discovered pool
+    await addICPDexLiquidity(
+      icpBtcPool.poolId,
+      icpBtcPool.dex,             // Use the DEX from the pool info
+      ICP_LEDGER,
+      CKBTC_LEDGER,
+      BigInt(100_000_000),        // 1 ICP (8 decimals)
+      BigInt(10_000),             // 0.0001 ckBTC (8 decimals)
+      1.0,                         // 1% slippage
+    );
+  }
 }
 
 main().catch(console.error);
