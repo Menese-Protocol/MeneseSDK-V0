@@ -78,7 +78,7 @@ actor WalletBot {
     getMySuiBalance : shared () -> async Nat64;
     getMyEvmBalance : shared (Text) -> async Result.Result<Nat, Text>;  // param = RPC endpoint URL
 
-    // ── Sends ($0.05 each) ──
+    // ── Sends (1 action each) ──
     sendSolTransaction : shared (Text, Nat64) -> async Result.Result<Text, Text>;
     sendICP : shared (Principal, Nat64) -> async Result.Result<SendICPResult, Text>;
     sendBitcoin : shared (Text, Nat64) -> async Result.Result<SendResultBtcLtc, Text>;
@@ -95,7 +95,7 @@ actor WalletBot {
     sendCloak : shared (Text, Nat64) -> async Result.Result<SendResultCloak, Text>;
     sendThor : shared (Text, Nat64, Text) -> async Result.Result<Text, Text>;
 
-    // ── Swap ($0.075) ──
+    // ── Swap (1 action) ──
     // 8 params: inputMint, outputMint, amount, slippageBps, wrapSol, unwrapSol, ?inputAta, ?outputAta
     swapRaydiumApiUser : shared (Text, Text, Nat64, Nat64, Bool, Bool, ?Text, ?Text) -> async RaydiumApiSwapResult;
   };
@@ -232,7 +232,7 @@ actor WalletBot {
     };
   };
 
-  // ── Send tokens ($0.05 each) ──────────────────────────────
+  // ── Send tokens (1 action each) ────────────────────────────
   // Supports all 19 chains. Amount is in smallest unit.
   // For EVM chains: configure RPC first with setEvmRpc().
   //
@@ -358,7 +358,7 @@ actor WalletBot {
     };
   };
 
-  // ── Swap SOL tokens on Raydium ($0.075) ───────────────────
+  // ── Swap SOL tokens on Raydium (1 action) ─────────────────
   // swapRaydiumApiUser takes 8 params and returns FLAT RaydiumApiSwapResult
   //   (inputMint, outputMint, amount, slippageBps, wrapSol, unwrapSol, ?inputAta, ?outputAta)
   //   Returns: { inputAmount, outputAmount, priceImpactPct, txSignature }

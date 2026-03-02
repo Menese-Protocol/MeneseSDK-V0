@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-// ─── Types (match menese-config.ts IDL) ──────────────────────────
+// ─── Types (match sdk-setup.ts IDL) ──────────────────────────
 
 interface UserAccount {
   creditsMicroUsd: bigint;
@@ -364,34 +364,25 @@ export function DeveloperDashboard({ backend }: DeveloperDashboardProps) {
           <h2 className="text-lg font-semibold">Pricing</h2>
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-white/60 mb-2">Per-Operation Fees</h3>
+              <h3 className="text-sm font-medium text-white/60 mb-2">Billing Model</h3>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-white/40 text-left">
                     <th className="pb-2">Operation</th>
-                    <th className="pb-2">Client Mode</th>
-                    <th className="pb-2">Agent Mode</th>
+                    <th className="pb-2">Cost</th>
                   </tr>
                 </thead>
                 <tbody className="text-white/80">
                   <tr>
-                    <td className="py-1">Send/Transfer</td>
-                    <td className="py-1 text-cyan-400">$0.05</td>
-                    <td className="py-1">$0.10</td>
+                    <td className="py-1">Send / Swap / Bridge / DeFi</td>
+                    <td className="py-1 text-cyan-400">1 action</td>
                   </tr>
                   <tr>
-                    <td className="py-1">DEX Swap</td>
-                    <td className="py-1 text-cyan-400">$0.075</td>
-                    <td className="py-1">$0.15</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1">Cross-chain Bridge</td>
-                    <td className="py-1 text-cyan-400">$0.10</td>
-                    <td className="py-1">$0.20</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 text-white/40">Queries / Addresses</td>
+                    <td className="py-1 text-white/40">Address derivation (4 chains)</td>
                     <td className="py-1 text-green-400">FREE</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1 text-white/40">Gateway queries</td>
                     <td className="py-1 text-green-400">FREE</td>
                   </tr>
                 </tbody>
@@ -409,23 +400,23 @@ export function DeveloperDashboard({ backend }: DeveloperDashboardProps) {
                 </thead>
                 <tbody className="text-white/80">
                   <tr>
-                    <td className="py-1">Free</td>
-                    <td className="py-1">$0</td>
-                    <td className="py-1">5 (lifetime)</td>
+                    <td className="py-1">Basic</td>
+                    <td className="py-1">$20/mo</td>
+                    <td className="py-1">100</td>
                   </tr>
                   <tr>
                     <td className="py-1">Developer</td>
-                    <td className="py-1">$35/mo</td>
+                    <td className="py-1">$45.50/mo</td>
                     <td className="py-1">1,000</td>
                   </tr>
                   <tr>
                     <td className="py-1">Pro</td>
-                    <td className="py-1">$99/mo</td>
+                    <td className="py-1">$128.70/mo</td>
                     <td className="py-1">5,000</td>
                   </tr>
                   <tr>
                     <td className="py-1">Enterprise</td>
-                    <td className="py-1">$249/mo</td>
+                    <td className="py-1">$323.70/mo</td>
                     <td className="py-1">Unlimited</td>
                   </tr>
                 </tbody>

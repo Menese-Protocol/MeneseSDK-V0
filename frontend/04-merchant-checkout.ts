@@ -14,12 +14,12 @@
  *   - Confirms when payment is received
  *   - Sweeps funds to your treasury address
  *
- * Addresses are FREE. Sends cost $0.05 each (for sweeping).
+ * Addresses are FREE. Sends cost 1 action each (for sweeping).
  *
  * Tested: Feb 11, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor, MENESE_CANISTER_ID } from "./menese-config";
+import { createMeneseActor, MENESE_CANISTER_ID } from "./sdk-setup";
 import { Principal } from "@dfinity/principal";
 
 // ── Your merchant config ─────────────────────────────────────

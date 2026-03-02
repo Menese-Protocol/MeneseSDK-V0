@@ -4,7 +4,7 @@
  * Call ANY EVM smart contract directly from your MeneseSDK wallet:
  *
  *   callEvmContractWrite(contract, functionSelector, argsHexes, rpcEndpoint, chainId, value, quoteId?)
- *     → Execute a state-changing function (costs gas + $0.10)
+ *     → Execute a state-changing function (costs gas + 1 action)
  *
  *   callEvmContractRead(contract, functionSelector, argsHexes, rpcEndpoint)
  *     → Read contract state (FREE — no gas, no billing)
@@ -19,12 +19,12 @@
  *   - DAO governance (vote, propose)
  *   - Any contract on Ethereum, Arbitrum, Base, Polygon, BSC, Optimism
  *
- * Cost: Write = $0.10 (sign operation), Read = FREE
+ * Cost: Write = 1 action, Read = FREE
  *
  * Tested: Feb 12, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 const ETH_RPC = "https://eth.llamarpc.com";
 const ARB_RPC = "https://arb1.arbitrum.io/rpc";
@@ -68,7 +68,7 @@ async function transferERC20(
     BigInt(chainId),
     BigInt(0),     // value: 0 (non-payable function)
     [],            // quoteId: optional
-  ) as any;
+  );
 
   if ("ok" in result) {
     console.log("TX:", result.ok.expectedTxHash);
@@ -101,7 +101,7 @@ async function approveERC20(
     BigInt(chainId),
     BigInt(0),
     [],
-  ) as any;
+  );
 
   if ("ok" in result) {
     console.log("Approval TX:", result.ok.expectedTxHash);
@@ -132,7 +132,7 @@ async function callPayableFunction(
     BigInt(chainId),
     ethValue,
     [],
-  ) as any;
+  );
 
   if ("ok" in result) {
     console.log("TX:", result.ok.expectedTxHash);
@@ -170,7 +170,7 @@ async function getERC20Balance(
     "balanceOf(address)",
     [addrHex],
     rpcEndpoint,
-  ) as any;
+  );
 
   if ("ok" in result) {
     // Result is hex-encoded uint256
@@ -201,7 +201,7 @@ async function getERC20Allowance(
     "allowance(address,address)",
     [ownerHex, spenderHex],
     rpcEndpoint,
-  ) as any;
+  );
 
   if ("ok" in result) {
     const hex = result.ok.replace("0x", "");
@@ -224,7 +224,7 @@ async function readContract(
     functionSig,
     args,
     rpcEndpoint,
-  ) as any;
+  );
 
   if ("ok" in result) {
     return result.ok;
@@ -252,10 +252,10 @@ async function main() {
     ETH_RPC,
   );
 
-  // Transfer 10 USDC on Ethereum ($0.10)
+  // Transfer 10 USDC on Ethereum (1 action)
   await transferERC20(USDC_ETH, "0xRecipient", BigInt(10_000_000), ETH_RPC, 1);
 
-  // Transfer 10 USDC on Arbitrum ($0.10, much cheaper gas)
+  // Transfer 10 USDC on Arbitrum (1 action, much cheaper gas)
   await transferERC20(USDC_ETH, "0xRecipient", BigInt(10_000_000), ARB_RPC, 42161);
 
   // Read totalSupply of any token (FREE)

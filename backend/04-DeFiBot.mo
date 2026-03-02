@@ -14,7 +14,7 @@
 ///   LP:    addLiquidityETH, removeLiquidityETH, getPoolReserves
 ///   Custom: callEvmContractRead (for on-chain price feeds, etc.)
 ///
-/// Cost: $0.10 per write operation (Agent Mode), reads are FREE
+/// Cost: 1 action per write operation, reads are FREE
 ///
 /// Tested: Feb 12, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
 
@@ -138,7 +138,7 @@ actor DeFiBot {
     let result = await menese.aaveSupplyEth(amountWei, ethRpc, null);
     switch (result) {
       case (#ok(r)) {
-        addLog("aave", "Supply TX: " # r.txHash # " | aWETH: " # r.aTokenAddress, true);
+        addLog("aave", "Supply TX: " # r.txHash # " | ETH supplied: " # Nat.toText(r.ethSupplied), true);
         #ok(r.txHash);
       };
       case (#err(e)) {

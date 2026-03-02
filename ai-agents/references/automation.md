@@ -77,7 +77,7 @@ func botCycle() : async () {
   // 2. Skip if below threshold
   if (balance < swapThresholdLamports) return;
 
-  // 3. Swap SOL → USDC on Raydium ($0.075)
+  // 3. Swap SOL → USDC on Raydium (1 action)
   let swapAmount = balance - 50_000_000; // Keep 0.05 SOL for rent
   let result = await menese.swapRaydiumApiUser(
     SOL_MINT, USDC_MINT,
@@ -113,13 +113,13 @@ let dcaRule : Menese.Rule = {
   positionId = 0;
   createdAt = Time.now();
   dcaConfig = ?{
-    amountPerInterval = 100_000_000;  // 0.1 SOL per interval
-    currentInterval = 0;
+    amountPerBuy = 100_000_000;  // 0.1 SOL per buy
+    executedBuys = 0;
     intervalSeconds = 3600;  // Every hour
-    lastExecutedAt = 0;
-    maxIntervals = 24;  // Run 24 times then stop
-    targetToken = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";  // USDC
-    totalSpent = 0;
+    nextExecutionTime = 0;
+    tokenIn = "So11111111111111111111111111111111111111112";  // SOL
+    tokenOut = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";  // USDC
+    totalBuys = 24;  // Run 24 times then stop
   };
   lpConfig = null;
   scheduledConfig = null;
@@ -174,7 +174,7 @@ await menese.deleteStrategyRule(ruleId);
 
 // View execution history
 let logs = await menese.getStrategyLogs();
-// ExecutionLog = { action, ?error, executedAt, result, ruleId, success }
+// ExecutionLog = { ?error, intent_hash, rule_id, stage: ExecutionStage, ts, ?tx_id }
 
 // Initialize automation (call once per principal)
 let msg = await menese.initAutomation();
@@ -229,11 +229,11 @@ let wstEthBal = switch (await menese.getWstEthBalance(evmAddr, ethRpc)) {
 ```motoko
 // Supply ETH → receive aWETH
 let supplyResult = await menese.aaveSupplyEth(amountWei, ethRpc, null);
-// Result<SupplyEthResult, Text> — ok: { txHash, aTokenAddress, suppliedAmount, senderAddress, note }
+// Result<SupplyEthResult, Text> — ok: { txHash, ethSupplied, nonce, senderAddress, note }
 
 // Withdraw ETH from Aave
 let withdrawResult = await menese.aaveWithdrawEth(amountWei, ethRpc, null);
-// Result<WithdrawEthResult, Text> — ok: { txHash, withdrawnAmount, senderAddress, note }
+// Result<WithdrawEthResult, Text> — ok: { txHash, approvalTxHash: opt, ethWithdrawn, nonce, senderAddress, note }
 
 // Supply/withdraw ERC-20 tokens
 await menese.aaveSupplyToken(tokenAddress, amount, ethRpc, null);
@@ -341,16 +341,16 @@ let invoice = await createInvoice(#SOL, 500_000_000, "customer123", "Widget purc
 let status = await checkPayment("INV-1");
 // { status = "PAID" | "Pending — balance: 0"; balance = 500000000 }
 
-// 3. Sweep paid funds to treasury ($0.05)
+// 3. Sweep paid funds to treasury (1 action)
 let sweep = await sweepToTreasury("INV-1");
 // #ok("TX: 4vJ7k...")
 ```
 
-**Pattern**: Address generation is FREE + deterministic (cache after first call). Balance checks are FREE. Only the sweep send costs $0.05.
+**Pattern**: Address generation is FREE + deterministic (cache after first call). Balance checks are FREE. Only the sweep send costs 1 action.
 
 ## Custom EVM Contract Calls
 
-Call any EVM smart contract — read for FREE, write for $0.10.
+Call any EVM smart contract — read for FREE, write for 1 action.
 
 ### Read (FREE) — e.g., Chainlink Price Feed
 
@@ -365,7 +365,7 @@ let result = await menese.callEvmContractRead(
 // Result<Text, Text> — ok = hex-encoded response data
 ```
 
-### Write ($0.10) — e.g., Custom DEX
+### Write (1 action) — e.g., Custom DEX
 
 ```motoko
 let result = await menese.callEvmContractWrite(

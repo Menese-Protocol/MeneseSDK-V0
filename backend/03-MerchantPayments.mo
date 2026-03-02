@@ -10,7 +10,7 @@
 /// Supported payment chains: SOL, ICP (balance checking built in)
 /// For other chains, use the address + external verification.
 ///
-/// Cost: Address generation = FREE, Balance check = FREE, Sweep = $0.05
+/// Cost: Address generation = FREE, Balance check = FREE, Sweep = 1 action
 ///
 /// Tested: Feb 11, 2026 on mainnet
 

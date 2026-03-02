@@ -9,7 +9,7 @@
 /// Use case: DCA bot, rebalancer, auto-sweep, relayer logic.
 /// The canister runs on a timer — no human interaction needed after setup.
 ///
-/// Cost: $0.075 per swap, $0.05 per send
+/// Cost: 1 action per swap, 1 action per send
 ///
 /// Tested: Feb 11, 2026 on mainnet
 

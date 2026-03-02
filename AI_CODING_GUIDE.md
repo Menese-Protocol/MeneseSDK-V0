@@ -69,10 +69,10 @@ Feed Caffeine these files to build browser-based dApps:
 
 | File | Purpose | Location |
 |------|---------|----------|
-| **menese-config.ts** | Full Candid IDL + relay helpers | `examples/client-mode/menese-config.ts` |
-| **01-quick-start.ts** | Address derivation pattern | `examples/client-mode/01-quick-start.ts` |
-| **02-send-tokens.ts** | All 19 chains send pattern | `examples/client-mode/02-send-tokens.ts` |
-| **03-swap.ts** | DEX swap patterns (6 DEXes) | `examples/client-mode/03-swap.ts` |
+| **sdk-setup.ts** | Full Candid IDL + actor factory | `examples/frontend/sdk-setup.ts` |
+| **01-quick-start.ts** | Address derivation pattern | `examples/frontend/01-quick-start.ts` |
+| **02-send-tokens.ts** | All 19 chains send pattern | `examples/frontend/02-send-tokens.ts` |
+| **03-swap.ts** | DEX swap patterns (6 DEXes) | `examples/frontend/03-swap.ts` |
 | **backend.did.d.ts** | All TypeScript type definitions | `src/declarations/backend/backend.did.d.ts` |
 
 **Prompt template for Caffeine (frontend)**:
@@ -80,12 +80,12 @@ Feed Caffeine these files to build browser-based dApps:
 I'm building a [wallet/checkout/dashboard] using MeneseSDK on ICP.
 
 Context files attached:
-- menese-config.ts (Candid IDL + relay helpers)
+- sdk-setup.ts (Candid IDL + actor factory)
 - backend.did.d.ts (all TypeScript types)
 - [relevant example file]
 
 Production canister: urs2a-ziaaa-aaaad-aembq-cai
-Use Client Mode (relay) for cheaper pricing ($0.05/send, $0.075/swap).
+Use sign-only endpoints for cheaper canister cycles.
 
 Generate a React component that [describes what you want].
 ```
@@ -96,10 +96,10 @@ Feed Caffeine these files to build autonomous canister-to-canister integrations:
 
 | File | Purpose | Location |
 |------|---------|----------|
-| **MeneseInterface.mo** | Full actor type (ALL endpoints) | `examples/agent-mode/MeneseInterface.mo` |
-| **01-BasicIntegration.mo** | Canister basics pattern | `examples/agent-mode/01-BasicIntegration.mo` |
-| **02-AutomationBot.mo** | Timer/DCA bot pattern | `examples/agent-mode/02-AutomationBot.mo` |
-| **03-MerchantPayments.mo** | Invoice/payment pattern | `examples/agent-mode/03-MerchantPayments.mo` |
+| **MeneseInterface.mo** | Full actor type (ALL endpoints) | `examples/backend/MeneseInterface.mo` |
+| **01-BasicIntegration.mo** | Canister basics pattern | `examples/backend/01-BasicIntegration.mo` |
+| **02-AutomationBot.mo** | Timer/DCA bot pattern | `examples/backend/02-AutomationBot.mo` |
+| **03-MerchantPayments.mo** | Invoice/payment pattern | `examples/backend/03-MerchantPayments.mo` |
 
 **Prompt template for Caffeine (backend)**:
 ```
@@ -110,7 +110,7 @@ Context files attached:
 - [relevant example file]
 
 Production canister: urs2a-ziaaa-aaaad-aembq-cai
-Use Agent Mode for autonomous execution ($0.10/send, $0.15/swap).
+Use full execution mode for autonomous operation.
 
 Generate a Motoko actor that [describes what you want].
 Import MeneseSDK as: import Menese "MeneseInterface";
@@ -147,20 +147,19 @@ Use: let menese = Menese.mainnet();
 
 ---
 
-## Pricing — Two Modes
+## Pricing — Subscription Model
 
-| Operation | Client Mode (Relay) | Agent Mode (HTTP) |
-|-----------|--------------------|--------------------|
-| Send/Transfer | $0.05 | $0.10 |
-| DEX Swap | $0.075 | $0.15 |
-| Cross-chain Bridge | $0.10 | $0.20 |
-| Address derivation | FREE | FREE |
-| Balance queries | FREE | FREE |
-| Swap quotes | FREE | FREE |
-| Strategy creation | FREE | FREE |
+| Operation | Cost |
+|-----------|------|
+| Send/Transfer | 1 action |
+| DEX Swap | 1 action |
+| Cross-chain Bridge | 1 action |
+| Address derivation | FREE |
+| Balance queries | FREE |
+| Swap quotes | FREE |
+| Strategy creation | 1 action |
 
-**Client Mode** = frontend calls relay API, canister only signs. Cheaper.
-**Agent Mode** = canister does HTTP outcalls + signing. Autonomous, no browser needed.
+All write operations cost **1 action** from your subscription. No per-action dollar fees.
 
 ---
 
@@ -168,19 +167,14 @@ Use: let menese = Menese.mainnet();
 
 | Tier | Price | Actions/Month | Best for |
 |------|-------|---------------|----------|
-| **Free** | $0 | 5 (lifetime) | Testing & prototyping |
-| **Developer** | $35/mo | 1,000 | Side projects, small apps |
-| **Pro** | $99/mo | 5,000 | Production apps |
-| **Enterprise** | $249/mo | Unlimited | High-volume, multi-app |
-
-Or use **pay-per-use credits** — deposit ICP and pay per operation at the per-op rates above.
+| **Basic** | $20/mo | 100 | Agents & personal wallets |
+| **Developer** | $45.50/mo | 1,000 | Side projects, small apps |
+| **Pro** | $128.70/mo | 5,000 | Production apps |
+| **Enterprise** | $323.70/mo | Unlimited | High-volume, multi-app |
 
 ```bash
 # Purchase a subscription
 dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant { Developer }, "ICP")'
-
-# Or deposit credits (pay-per-use)
-dfx canister call urs2a-ziaaa-aaaad-aembq-cai depositGatewayCredits '("ICP", 100000000)'
 ```
 
 ---
@@ -236,27 +230,27 @@ These are the type-safe bindings for calling MeneseSDK from JavaScript/TypeScrip
 
 | Chain | Send | Swap | Bridge | DEX |
 |-------|------|------|--------|-----|
-| Solana | $0.05/$0.10 | $0.075/$0.15 | $0.10/$0.20 | Raydium |
-| Ethereum | $0.05/$0.10 | $0.075/$0.15 | $0.10/$0.20 | Uniswap V3 |
-| Arbitrum | $0.05/$0.10 | $0.075/$0.15 | - | Uniswap V3 |
-| Base | $0.05/$0.10 | $0.075/$0.15 | - | Uniswap V3 |
-| Polygon | $0.05/$0.10 | $0.075/$0.15 | - | Uniswap V3 |
-| BSC | $0.05/$0.10 | $0.075/$0.15 | - | PancakeSwap |
-| Optimism | $0.05/$0.10 | $0.075/$0.15 | - | Uniswap V3 |
-| Bitcoin | $0.05/$0.10 | - | - | - |
-| Litecoin | $0.05/$0.10 | - | - | - |
-| ICP | FREE | $0.075/$0.15 | - | ICPSwap, KongSwap |
-| XRP | $0.05/$0.10 | $0.075/$0.15 | - | XRP DEX |
-| SUI | $0.05/$0.10 | $0.075/$0.15 | - | Cetus |
-| TON | $0.05/$0.10 | - | - | - |
-| Cardano | $0.05/$0.10 | $0.075/$0.15 | - | Minswap |
-| Tron | $0.05/$0.10 | - | - | - |
-| Aptos | $0.05/$0.10 | - | - | - |
-| NEAR | $0.05/$0.10 | - | - | - |
-| CloakCoin | $0.05/$0.10 | - | - | - |
-| THORChain | $0.05/$0.10 | - | - | - |
+| Solana | 1 action | 1 action | 1 action | Raydium |
+| Ethereum | 1 action | 1 action | 1 action | Uniswap V3 |
+| Arbitrum | 1 action | 1 action | - | Uniswap V3 |
+| Base | 1 action | 1 action | - | Uniswap V3 |
+| Polygon | 1 action | 1 action | - | Uniswap V3 |
+| BSC | 1 action | 1 action | - | PancakeSwap |
+| Optimism | 1 action | 1 action | - | Uniswap V3 |
+| Bitcoin | 1 action | - | - | - |
+| Litecoin | 1 action | - | - | - |
+| ICP | FREE | 1 action | - | ICPSwap, KongSwap |
+| XRP | 1 action | 1 action | - | XRP DEX |
+| SUI | 1 action | 1 action | - | Cetus |
+| TON | 1 action | - | - | - |
+| Cardano | 1 action | 1 action | - | Minswap |
+| Tron | 1 action | - | - | - |
+| Aptos | 1 action | - | - | - |
+| NEAR | 1 action | - | - | - |
+| CloakCoin | 1 action | - | - | - |
+| THORChain | 1 action | - | - | - |
 
-Prices shown as Client/Agent mode.
+All operations cost 1 action from your subscription.
 
 ---
 
@@ -273,16 +267,16 @@ await menese.getMyCardanoAddress();
 // ... all 19 chains
 
 // All balance queries
-await menese.checkSolBalance(address);
+await menese.getMySolanaBalance();
 await menese.getEvmBalance(address, chainId);
 
 // Swap quotes (no execution)
-await menese.getSwapQuoteRaydium(inputMint, outputMint, amount, slippage);
-await menese.getIcpDexAggregatedQuote(tokenIn, tokenOut, amountIn);
+await menese.getRaydiumQuote(inputMint, outputMint, amount, slippage);
+await menese.getICPDexQuote(tokenIn, tokenOut, amountIn);
 
 // Strategy management
 await menese.addStrategyRule(rule);
-await menese.getMyStrategies();
+await menese.getMyStrategyRules();
 
 // Developer registration
 await menese.registerDeveloperCanister(principal, name);
@@ -293,7 +287,7 @@ await menese.getMyDeveloperKey();
 
 ## Tips for Caffeine
 
-1. **Always include `menese-config.ts`** — it has the full Candid IDL that Caffeine needs to understand the API
+1. **Always include `sdk-setup.ts`** — it has the full Candid IDL that Caffeine needs to understand the API
 2. **Include `MeneseInterface.mo`** for Motoko — it's the complete actor type definition
 3. **Include `backend.did.d.ts`** for TypeScript — it has all 150+ type definitions
 4. **Start with FREE operations** — address derivation and balances cost nothing, great for prototyping

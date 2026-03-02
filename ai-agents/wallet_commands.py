@@ -13,7 +13,7 @@ Usage:
     python3 wallet_commands.py swap sol <input> <output> <amount> <slippage>  # Raydium swap
 
 Calls MeneseSDK canister (urs2a-ziaaa-aaaad-aembq-cai) via dfx.
-All address/balance queries are FREE. Sends cost $0.05 each. Swaps cost $0.075.
+All address/balance queries are FREE. Sends and swaps each cost 1 action from your subscription.
 
 IMPORTANT: For EVM chains (ETH, ARB, BASE, etc.), you must provide your own
 RPC endpoint. Configure EVM_RPCS below with your own URLs.
@@ -210,9 +210,9 @@ def send_tokens(chain: str, amount: str, to_address: str):
         output = dfx_call("sendCardanoTransaction", f'("{to_address}", {lovelace})')
 
     elif chain == "cloak":
-        satoshis = int(float(amount) * 1e8)
-        print(f"Sending {amount} CLOAK to {to_address}...")
-        output = dfx_call("sendCloak", f'("{to_address}", {satoshis})')
+        units = int(float(amount) * 1e6)
+        print(f"Sending {amount} CLOAK ({units} units) to {to_address}...")
+        output = dfx_call("sendCloak", f'("{to_address}", {units})')
 
     elif chain == "rune":
         units = int(float(amount) * 1e8)
@@ -259,8 +259,8 @@ MeneseSDK Wallet Commands (19 chains)
 
   addresses                              Get addresses on all 19 chains (FREE)
   balance <chain>                        Check balance (FREE)
-  send <chain> <amount> <to>             Send tokens ($0.05)
-  swap <input_mint> <output_mint> <amount> <slippage_bps>  Raydium swap ($0.075)
+  send <chain> <amount> <to>             Send tokens (1 action)
+  swap <input_mint> <output_mint> <amount> <slippage_bps>  Raydium swap (1 action)
 
 Chains for send: sol, icp, btc, ltc, eth, arb, base, polygon, bsc, optimism,
                  xrp, sui, ton, apt, near, trx, ada, cloak, rune

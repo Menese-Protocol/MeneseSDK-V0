@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.dfx/
+dist/
+*.pyc
+__pycache__/
+backend.did
+scripts/

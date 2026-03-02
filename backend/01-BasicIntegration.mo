@@ -83,20 +83,20 @@ actor BasicIntegration {
     };
   };
 
-  // ── Send SOL ($0.05) ─────────────────────────────────────
+  // ── Send SOL (1 action) ──────────────────────────────────
   // Returns: Result<Text, Text> — ok = txHash
   public shared func sendSol(toAddress : Text, lamports : Nat64) : async Result.Result<Text, Text> {
     await menese.sendSolTransaction(toAddress, lamports);
   };
 
-  // ── Send ICP ($0.05) ─────────────────────────────────────
+  // ── Send ICP (1 action) ──────────────────────────────────
   // Returns: Result<SendICPResult, Text>
   //   SendICPResult = { amount, blockHeight, fee, from, to }
   public shared func sendIcp(to : Principal, e8s : Nat64) : async Result.Result<Menese.SendICPResult, Text> {
     await menese.sendICP(to, e8s);
   };
 
-  // ── Send ETH on any EVM chain ($0.05) ────────────────────
+  // ── Send ETH on any EVM chain (1 action) ─────────────────
   // NOTE: Requires 5 params: to, valueWei, rpcEndpoint, chainId, quoteId?
   // You must provide your own RPC endpoint for the target chain.
   // Returns: Result<SendResultEvm, Text>
@@ -110,7 +110,7 @@ actor BasicIntegration {
     await menese.sendEvmNativeTokenAutonomous(toAddress, amountWei, rpcEndpoint, chainId, null);
   };
 
-  // ── Send BTC ($0.05) ─────────────────────────────────────
+  // ── Send BTC (1 action) ──────────────────────────────────
   // Returns: Result<SendResultBtcLtc, Text>
   //   SendResultBtcLtc = { txid, amount, fee, senderAddress, recipientAddress, note }
   public shared func sendBtc(toAddress : Text, satoshis : Nat64) : async Result.Result<Menese.SendResultBtcLtc, Text> {

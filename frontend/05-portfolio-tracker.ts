@@ -19,7 +19,7 @@
  * Tested: Feb 11, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 // ── Chain config for the portfolio view ──────────────────────
 const CHAINS = [
@@ -40,7 +40,7 @@ const CHAINS = [
   { id: "tron", name: "Tron", symbol: "TRX", decimals: 6, explorer: "https://tronscan.org/#/address/" },
   { id: "aptos", name: "Aptos", symbol: "APT", decimals: 8, explorer: "https://explorer.aptoslabs.com/account/" },
   { id: "near", name: "NEAR", symbol: "NEAR", decimals: 24, explorer: "https://nearblocks.io/address/" },
-  { id: "cloak", name: "CloakCoin", symbol: "CLOAK", decimals: 8, explorer: "" },
+  { id: "cloak", name: "CloakCoin", symbol: "CLOAK", decimals: 6, explorer: "" },
   { id: "thorchain", name: "THORChain", symbol: "RUNE", decimals: 8, explorer: "https://thorchain.net/address/" },
 ];
 
@@ -230,6 +230,32 @@ async function main() {
 
   // Or start auto-refreshing dashboard (every 60s)
   // await startDashboard(60_000);
+
+  // ── Batch Alternative ──────────────────────────────────────
+  // Instead of calling each chain individually, use batch endpoints:
+  const actor = await createMeneseActor();
+
+  const allAddresses = await actor.getAllAddresses();
+  console.log("\n=== All Addresses (batch) ===");
+  console.log("Solana:", allAddresses.solana.address);
+  console.log("EVM:", allAddresses.evm.evmAddress);
+  console.log("Bitcoin:", allAddresses.bitcoin.bech32Address);
+  console.log("XRP:", allAddresses.xrp.classicAddress);
+  console.log("SUI:", allAddresses.sui.suiAddress);
+  console.log("TON:", allAddresses.ton.nonBounceable);
+  console.log("Cardano:", allAddresses.cardano.bech32Address);
+  console.log("Tron:", allAddresses.tron.base58Address);
+  console.log("Aptos:", allAddresses.aptos.address);
+  console.log("Near:", allAddresses.near.implicitAccountId);
+  console.log("Litecoin:", allAddresses.litecoin.bech32Address);
+
+  const allBalances = await actor.getAllBalances();
+  console.log("\n=== All Balances (batch) ===");
+  console.log("BTC:", allBalances.bitcoin, "satoshis");
+  console.log("LTC:", allBalances.litecoin, "litoshis");
+  console.log("NEAR:", allBalances.near.toString(), "yoctoNEAR");
+  if ("ok" in allBalances.solana) console.log("SOL:", allBalances.solana.ok, "lamports");
+  if ("ok" in allBalances.icp) console.log("ICP:", allBalances.icp.ok, "e8s");
 }
 
 main().catch(console.error);

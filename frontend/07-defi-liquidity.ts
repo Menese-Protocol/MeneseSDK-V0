@@ -14,7 +14,7 @@
  *   - getICPDexPools()                                 → [PoolInfo]
  *   - getICPDexTokens()                                → [DexToken]
  *
- * Cost: $0.10 per operation (sign + HTTP outcalls)
+ * Cost: 1 action per operation (sign-only + HTTP outcalls)
  *
  * NOTE: LP operations involve approve + deposit in a single call.
  * The canister handles token approvals automatically.
@@ -22,7 +22,7 @@
  * Tested: Feb 12, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 const ETH_RPC = "https://eth.llamarpc.com";
 const ARB_RPC = "https://arb1.arbitrum.io/rpc";
@@ -314,6 +314,37 @@ async function main() {
       BigInt(10_000),             // 0.0001 ckBTC (8 decimals)
       1.0,                         // 1% slippage
     );
+  }
+
+  // ── ICP DEX Token Discovery ────────────────────────────────
+  const actor = await createMeneseActor();
+  const tokens = await actor.getICPDexTokens();
+  console.log(`\nAvailable ICP DEX tokens (${tokens.length}):`);
+  for (const t of tokens.slice(0, 10)) {
+    console.log(`  ${t.symbol} (${t.name}) on ${t.availableOn.map(d => Object.keys(d)[0]).join(", ")}`);
+  }
+
+  // ── AI Rebalance Recommendations ───────────────────────────
+  // Get AI-powered suggestions for optimizing your LP positions
+  const preferences = {
+    targetCategories: ["DeFi", "Stablecoins"],
+    riskTolerance: "medium",
+    minApy: [5.0],          // minimum 5% APY
+    maxImpermanentLoss: [10.0], // max 10% IL
+    autoCompound: true,
+  };
+
+  // Current holdings: [canisterId, amount] pairs
+  const holdings: [string, bigint][] = [
+    ["ryjl3-tyaaa-aaaaa-aaaba-cai", BigInt(100_000_000)], // 1 ICP
+  ];
+
+  const recommendations = await actor.getICPRebalanceRecommendations(preferences, holdings, []);
+  console.log(`\nRebalance recommendations (${recommendations.length}):`);
+  for (const rec of recommendations) {
+    console.log(`  ${rec.action}: ${rec.fromSymbol} → ${rec.toSymbol}`);
+    console.log(`    Reason: ${rec.reason}`);
+    if (rec.estimatedApy.length > 0) console.log(`    Est. APY: ${rec.estimatedApy[0]}%`);
   }
 }
 

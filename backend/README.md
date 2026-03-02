@@ -1,141 +1,152 @@
-# MeneseSDK Backend (Motoko) Integration Examples
+# MeneseSDK — Backend Examples (Motoko)
 
-Canister-to-canister integration examples for calling MeneseSDK from your own ICP canister.
+**Backend mode** = your canister calls MeneseSDK directly via inter-canister calls.
+The canister handles everything including HTTP outcalls (autonomous execution).
 
-## How It Works
+## Pricing
 
-Your canister calls MeneseSDK's public functions via inter-canister calls.
-Since the `caller` is your **canister principal** (not a human), you must first
-register your canister as a developer canister — then all operations bill YOUR
-developer account automatically.
+All operations cost **1 action** from your subscription. No per-action fees.
 
-## Setup
+| Tier | Price | Actions/Month |
+|------|-------|---------------|
+| **Basic** | $20/mo | 100 |
+| **Developer** | $45.50/mo | 1,000 |
+| **Pro** | $128.70/mo | 5,000 |
+| **Enterprise** | $323.70/mo | Unlimited |
 
-### 1. Register your canister (one-time)
+**FREE (no subscription needed):** `getMySolanaAddress`, `getMyEvmAddress`, `getMyBitcoinAddress`, `getMyCardanoAddress`, `registerDeveloperCanister`, gateway queries.
 
-From `dfx` or your frontend, call with your human identity:
+## When to use Backend Mode
 
-```bash
-dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister \
-  '(principal "YOUR-CANISTER-ID", "MyApp")'
+- Your canister runs **autonomously** (timers, bots, automation)
+- There is **no browser/client** present to fetch chain data and broadcast
+- You need **canister-to-canister** calls (backend integration)
+- You're building a **DCA bot**, **rebalancer**, or **automated strategy**
+
+## What You Can Automate
+
+Agent mode is where MeneseSDK shines — **fully autonomous, on-chain execution** with no human in the loop.
+
+### Built-in Strategy Engine
+Create rules that MeneseSDK evaluates and executes automatically:
+
+| Rule Type | What It Does |
+|-----------|-------------|
+| `#TakeProfit` | Sell when price exceeds target |
+| `#StopLoss` | Sell when price drops below threshold |
+| `#DCA` | Buy fixed amounts at regular intervals |
+| `#LiquidityProvision` | Auto-LP based on APY/volatility |
+| `#Rebalance` | Adjust concentrated LP ranges |
+| `#APYMigration` | Move LP to higher-yield pools |
+| `#VolatilityTrigger` | React to market volatility |
+| `#Scheduled` | Time-based execution (weekly, monthly) |
+
+### DeFi Endpoints (Canister-to-Chain)
+Call these directly from your Motoko canister:
+
+- **Aave**: `aaveSupplyEth`, `aaveWithdrawEth`, `aaveSupplyToken`, `aaveWithdrawToken`
+- **Lido**: `stakeEthForStEth`, `wrapStEth`, `unwrapWstEth`
+- **Uniswap V3 LP**: `addLiquidity`, `addLiquidityETH`, `removeLiquidity`, `removeLiquidityETH`
+- **ICP DEXes**: `addICPLiquidity`, `removeICPLiquidity` (ICPSwap, KongSwap)
+- **Any EVM Contract**: `callEvmContractWrite`, `callEvmContractRead`
+
+### Build Your Own Bot
+Deploy a canister with ICP timers that calls MeneseSDK on a schedule:
+
+```motoko
+// Timer-based bot: check balance every 5 minutes, swap when threshold exceeded
+let timerId = Timer.recurringTimer<system>(#seconds(300), func () : async () {
+  let bal = await menese.getMySolanaBalance();
+  switch (bal) {
+    case (#ok(lamports)) {
+      if (lamports > 500_000_000) { // > 0.5 SOL
+        let _ = await menese.swapRaydiumApiUser(SOL, USDC, lamports - 50_000_000, 150, true, false, null, null);
+      };
+    };
+    case (#err(_)) {};
+  };
+});
 ```
 
-This returns your developer key (`msk_xxxxx...`). All calls from your canister
-will now bill your developer account.
+See `02-AutomationBot.mo` for a complete working example.
 
-### 2. Add MeneseSDK to your canister
+**Need something custom?** Contact Menese Protocol for complex automation — multi-chain arbitrage, cross-chain yield farming, conditional bridging, or any DeFi workflow.
 
-Copy the `MeneseInterface.mo` file into your project. It defines the remote
-actor type with all 248+ functions and correct types from the `.did`.
+## How it works
 
-### 3. Call MeneseSDK from your code
+```
+Your Canister → MeneseSDK Canister (HTTP outcalls + signing) → Blockchain
+```
+
+1. Your canister calls MeneseSDK via inter-canister call
+2. MeneseSDK fetches chain data via HTTP outcalls
+3. MeneseSDK signs the transaction
+4. MeneseSDK broadcasts to the target chain
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `MeneseInterface.mo` | Full remote actor type with ALL endpoints |
+| `01-BasicIntegration.mo` | Canister-to-canister basics (addresses, balances, sends) |
+| `02-AutomationBot.mo` | Timer-based DCA/rebalance bot (autonomous) |
+| `03-MerchantPayments.mo` | Invoice + payment verification + treasury sweep |
+| `04-DeFiBot.mo` | Autonomous DeFi yield bot (Aave + Lido + LP rebalancing) |
+| `05-StrategyBot.mo` | Strategy engine usage (TP/SL/DCA/Rebalance rules) |
+| `WalletBot.mo` | Multi-chain wallet bot canister for ClawdBot |
+| `wallet_commands.py` | Python CLI wrapper using dfx (for bots/scripts) |
+
+## Quick Start (Motoko)
 
 ```motoko
 import Menese "MeneseInterface";
 
-let menese = Menese.mainnet();
-let addr = await menese.getMySolanaAddress();
-// addr.address — correct field for Solana
+actor MyApp {
+  let menese = Menese.mainnet();
+
+  // Get your canister's Solana address (FREE)
+  public shared func getMyAddress() : async Text {
+    let info = await menese.getMySolanaAddress();
+    info.address;
+  };
+
+  // Send SOL (1 action)
+  public shared func sendSol(to : Text, lamports : Nat64) : async Result.Result<Text, Text> {
+    await menese.sendSolTransaction(to, lamports);
+  };
+};
 ```
 
-## EVM Chains — Bring Your Own RPC
+## Setup
 
-For EVM chains (ETH, Arbitrum, Base, Polygon, BSC, Optimism), you must provide
-your own RPC endpoint and chain ID. MeneseSDK does NOT manage EVM RPCs.
+1. Add `MeneseInterface.mo` to your project
+2. Register your canister: `dfx canister call urs2a-ziaaa-aaaad-aembq-cai registerDeveloperCanister '(principal "YOUR_CANISTER_ID", "My App")'`
+3. Purchase a subscription: `dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant { Developer }, "ICP")'`
+4. Start calling MeneseSDK functions
 
-```motoko
-// sendEvmNativeTokenAutonomous takes 5 params:
-//   (to: Text, valueWei: Nat, rpcEndpoint: Text, chainId: Nat, ?quoteId: ?Text)
-let result = await menese.sendEvmNativeTokenAutonomous(
-  "0xRecipient",
-  1_000_000_000_000_000_000,  // 1 ETH in wei
-  "https://arb1.arbitrum.io/rpc",
-  42161,                        // Arbitrum chain ID
-  null,
-);
+## Production Canister
+
+| | |
+|---|---|
+| **Canister ID** | `urs2a-ziaaa-aaaad-aembq-cai` |
+| **Candid UI** | https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=urs2a-ziaaa-aaaad-aembq-cai |
+| **Local dev** | `dfx start` then `dfx deploy`, update canister ID in `MeneseInterface.mo` |
+
+## Developer Packages
+
+**Motoko** (add to `mops.toml`):
+```toml
+[dependencies]
+base = "0.13.2"
 ```
 
-## Important: Correct Field Names
+You do NOT need MeneseSDK's internal dependencies (evm-txs, libsecp256k1, etc.).
+Your canister only calls MeneseSDK via inter-canister calls.
 
-Address types return records with specific field names:
+## AI-Assisted Development
 
-| Chain | Correct Field | Wrong (will fail) |
-|-------|--------------|-------------------|
-| EVM | `evmAddress` | `address` |
-| SUI | `suiAddress` | `address` |
-| TON | `bounceable` / `nonBounceable` | `address` |
-| Cardano | `bech32Address` | `address` |
-| Bitcoin | `bech32Address` | (returns AddressInfo record, not Text) |
-| Litecoin | `bech32Address` | (returns AddressInfo record, not Text) |
-| Thorchain | `bech32Address` | `address` |
-| Tron | `base58Address` | `base58` |
-| NEAR | `implicitAccountId` | `accountId` |
+Feed your AI coding assistant these files for best results:
+1. `MeneseInterface.mo` — full actor type definition (ALL endpoints)
+2. Any relevant example `.mo` file from this directory
 
-## Important: Return Types Differ
-
-| Function | Return | Access Pattern |
-|----------|--------|---------------|
-| `sendSolTransaction` | `Result<Text, Text>` | `#ok(txHash)` |
-| `sendICP` | `Result<SendICPResult, Text>` | `#ok(receipt)` → `receipt.blockHeight` |
-| `sendBitcoin` | `Result<SendResultBtcLtc, Text>` | `#ok(r)` → `r.txid`, `r.fee` |
-| `sendLitecoin` | `Result<SendResult, Text>` | `#ok(r)` → `r.txHash` (NOT BtcLtc!) |
-| `sendEvmNativeTokenAutonomous` | `Result<SendResultEvm, Text>` | `#ok(r)` → `r.expectedTxHash` |
-| `sendXrpAutonomous` | **FLAT** `SendResultXrp` | `r.success`, `r.txHash` directly |
-| `sendTonSimple` | **FLAT** `SendResultTon` | `r.success`, `r.txHash` directly |
-| `swapRaydiumApiUser` | **FLAT** `RaydiumApiSwapResult` | `r.txSignature`, `r.outputAmount` |
-
-## Examples
-
-| File | Use Case |
-|------|----------|
-| `MeneseInterface.mo` | Shared actor type definition (import this) |
-| `01-BasicIntegration.mo` | Get addresses and balances, send tokens (SOL, ICP, BTC, ETH) |
-| `02-AutomationBot.mo` | Automated trading: timer-based Raydium swap + sweep |
-| `03-MerchantPayments.mo` | Accept SOL/ICP payments, verify, sweep to treasury |
-
-## Canister ID
-
-**Mainnet:** `urs2a-ziaaa-aaaad-aembq-cai`
-
-## Developer Packages & Billing
-
-### Subscription Tiers
-
-| Tier | Actions/Month | Best For |
-|------|--------------|----------|
-| **Free** | 5 | Testing |
-| **Developer** | 1,000 | Small apps |
-| **Pro** | 5,000 | Production |
-| **Enterprise** | Unlimited | High-volume |
-
-### How Billing Works
-
-When your canister calls MeneseSDK, the caller is your canister's principal.
-If registered via `registerDeveloperCanister`, operations bill your developer
-account. Otherwise, the canister itself needs credits deposited.
-
-### Operation Pricing
-
-| Operation | Cost | Examples |
-|-----------|------|----------|
-| Sign/Send | $0.05 | sendSolTransaction, sendBitcoin, sendICP, sendEvmNativeTokenAutonomous |
-| Swap | $0.075 | swapRaydiumApiUser, swapTokens, executeICPDexSwap |
-| Bridge | $0.10 | quickUltrafastEthToSol, quickCctpBridge, quickSolToEth |
-| Query | FREE | getAddress, getBalance, getQuote, validateDeveloperKey |
-
-Payment accepted in: **ckBTC, ICP, ckETH** (via ICRC-2 approve+transferFrom).
-
-### Manage Your Account (from Motoko)
-
-```motoko
-// Check billing status
-let account = await menese.getMyGatewayAccount();
-// account.creditsMicroUsd, account.tier, account.actionsUsed, account.actionsRemaining
-
-// Get or regenerate developer key
-let key = await menese.getMyDeveloperKey();
-let newKey = await menese.regenerateDeveloperKey();
-
-// Deposit credits (from ICRC-2 approved tokens)
-let receipt = await menese.depositGatewayCredits("ckBTC", 100_000);
-```
+See **[../AI_CODING_GUIDE.md](../AI_CODING_GUIDE.md)** for prompt templates and tips.

@@ -23,7 +23,7 @@
  *   - CloakCoin (CLOAK)   → sendCloak(toAddress, amount)
  *   - Thorchain (RUNE)    → sendThor(toAddress, amount, memo)
  *
- * Cost: $0.05 per send operation (billed to caller or developer key)
+ * Cost: 1 action per send operation (billed to caller or developer key)
  *
  * EVM chains: chainId 1 (ETH), 42161 (ARB), 8453 (BASE), 137 (POLY), 56 (BSC), 10 (OP)
  * All EVM chains use the SAME derived address — one key, multiple networks.
@@ -33,7 +33,7 @@
  */
 
 import { Principal } from "@dfinity/principal";
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 // ── EVM chain config ─────────────────────────────────────────
 // sendEvmNativeTokenAutonomous requires the actual RPC endpoint and chain ID
@@ -322,6 +322,7 @@ async function sendNear(receiverId: string, amountNear: number) {
 }
 
 // ── Send CloakCoin (CLOAK) ─────────────────────────────────
+// CloakCoin uses 6 decimals (1 CLOAK = 1,000,000 units), NOT 8
 // Returns: { ok: { txHash, txHex, changeValue }, err: text }
 async function sendCloak(toAddress: string, amount: number) {
   const menese = await createMeneseActor();
@@ -408,6 +409,18 @@ async function main() {
 
   // Send 1 RUNE (Thorchain)
   await sendRune("thor1RecipientAddress", 1, "");
+
+  // ── ICRC-1 Tokens (ckBTC, ckETH, etc.) ──────────────────
+  // Send any ICRC-1 token by providing the ledger canister ID
+  const actor = await createMeneseActor();
+  const icrc1Result = await actor.sendICRC1(
+    Principal.fromText("RECIPIENT_PRINCIPAL"),
+    BigInt(50_000),        // amount in token's smallest unit
+    "mxzaz-hqaaa-aaaar-qaada-cai",  // ckBTC ledger canister ID
+  );
+  if ("ok" in icrc1Result) {
+    console.log(`ICRC-1 sent: block ${icrc1Result.ok.blockHeight}, token: ${icrc1Result.ok.token}`);
+  }
 }
 
 main().catch(console.error);

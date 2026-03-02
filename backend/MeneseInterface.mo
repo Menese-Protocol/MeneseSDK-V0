@@ -257,6 +257,64 @@ module {
     best : SwapQuoteIcp;
     icpswapQuote : ?SwapQuoteIcp;
     kongswapQuote : ?SwapQuoteIcp;
+    timestamp : Int;
+  };
+
+  // ── ICP DEX LP Types ──────────────────────────────────────
+
+  public type TokenStandard = { #ICRC1; #ICRC2; #DIP20 };
+
+  public type DexToken = {
+    canisterId : Text; symbol : Text; name : Text; decimals : Nat8;
+    fee : Nat; standard : TokenStandard; logo : ?Text; category : ?Text;
+    availableOn : [DexId];
+  };
+
+  public type PoolInfo = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Symbol : Text; token1Symbol : Text; reserve0 : Nat; reserve1 : Nat;
+    fee : Nat; tvl : ?Nat; apr : ?Float; volume24h : ?Nat;
+  };
+
+  public type LPPosition = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Symbol : Text; token1Symbol : Text; liquidity : Nat;
+    token0Amount : Nat; token1Amount : Nat;
+    unclaimedFees : ?(Nat, Nat); valueUsd : ?Nat;
+  };
+
+  public type AddLiquidityRequest = {
+    poolId : Text; dex : DexId; token0 : Text; token1 : Text;
+    token0Amount : Nat; token1Amount : Nat; slippagePct : Float;
+  };
+
+  public type AddLiquidityResult = {
+    success : Bool; lpTokens : Nat; token0Used : Nat; token1Used : Nat;
+    poolId : Text; message : Text;
+  };
+
+  public type RemoveLiquidityRequest = {
+    poolId : Text; dex : DexId; lpTokens : Nat; slippagePct : Float;
+  };
+
+  public type RemoveLiquidityResult = {
+    success : Bool; token0Received : Nat; token1Received : Nat; message : Text;
+  };
+
+  public type ImpermanentLossRisk = { #Low; #Medium; #High };
+  public type RebalanceAction = { #Swap; #AddLiquidity; #RemoveLiquidity; #Compound };
+
+  public type RebalancePreferences = {
+    targetCategories : [Text]; riskTolerance : Text; minApy : ?Float;
+    maxImpermanentLoss : ?Float; autoCompound : Bool;
+  };
+
+  public type RebalanceRecommendation = {
+    id : Text; action : RebalanceAction; fromToken : Text; toToken : Text;
+    fromSymbol : Text; toSymbol : Text; amount : Nat; reason : Text;
+    estimatedApy : ?Float; currentApy : ?Float;
+    impermanentLossRisk : ImpermanentLossRisk; confidence : Float;
+    estimatedGasUsd : ?Float;
   };
 
   public type SwapQuoteIcp = {
@@ -298,9 +356,8 @@ module {
   // ============================================================
 
   public type ChainType = {
-    #EVM;
+    #Evm;
     #Solana;
-    #ICP;
   };
 
   public type RuleType = {
@@ -327,13 +384,13 @@ module {
   };
 
   public type DCAConfig = {
-    amountPerInterval : Nat;
-    currentInterval : Nat;
-    intervalSeconds : Int;
-    lastExecutedAt : Int;
-    maxIntervals : Nat;
-    targetToken : Text;
-    totalSpent : Nat;
+    amountPerBuy : Nat;
+    executedBuys : Nat;
+    intervalSeconds : Nat;
+    nextExecutionTime : Int;
+    tokenIn : Text;
+    tokenOut : Text;
+    totalBuys : Nat;
   };
 
   public type Rule = {
@@ -354,19 +411,149 @@ module {
     swapAmountWei : ?Nat;
   };
 
-  // Simplified optional config types — fill in if needed
-  public type LPConfig = {};
-  public type ScheduledConfig = {};
-  public type APYMigrationConfig = {};
-  public type VolatilityConfig = {};
+  public type LPConfig = {
+    cooldownHours : Nat;
+    exitOnHighVolatility : Bool;
+    maxPositionSizePct : Float;
+    maxVolatility : Float;
+    minApy : Float;
+    minTvlUSD : Float;
+    poolAddress : Text;
+    rebalanceThreshold : Float;
+  };
+
+  public type ScheduledAction = {
+    #AddLP : { amountUSD : Nat; poolAddress : Text };
+    #Custom : Text;
+    #RemoveLP : { percentage : Nat; poolAddress : Text };
+    #Swap : { amountIn : Nat; tokenIn : Text; tokenOut : Text };
+  };
+
+  public type ScheduledConfig = {
+    action : ScheduledAction;
+    cronPattern : Text;
+    executedCount : Nat;
+    nextExecutionTime : Int;
+    repeatCount : Nat;
+  };
+
+  public type APYMigrationConfig = {
+    cooldownHours : Nat;
+    currentPoolAddress : Text;
+    lastMigrated : Int;
+    maxMigrationCostPct : Float;
+    minApyDelta : Float;
+    targetPools : [Text];
+  };
+
+  public type VolatilityAction = {
+    #Alert;
+    #Buy : { amountUSD : Nat };
+    #ExitLP : { poolAddress : Text };
+    #Sell : { percentage : Nat };
+  };
+
+  public type VolatilityConfig = {
+    action : VolatilityAction;
+    cooldownMinutes : Nat;
+    direction : { #Above; #Below };
+    lastTriggered : Int;
+    tokenSymbol : Text;
+    triggerStdDev : Float;
+  };
+
+  // ============================================================
+  // DEFI RESULT TYPES (Aave, Lido, LP)
+  // ============================================================
+
+  public type SupplyEthResult = {
+    ethSupplied : Nat;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    txHash : Text;
+  };
+
+  public type WithdrawEthResult = {
+    approvalTxHash : ?Text;
+    ethWithdrawn : Nat;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    txHash : Text;
+  };
+
+  public type SupplyTokenResult = {
+    amountSupplied : Nat;
+    approvalTxHash : ?Text;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    tokenAddress : Text;
+    txHash : Text;
+  };
+
+  public type WithdrawTokenResult = {
+    amountWithdrawn : Nat;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    tokenAddress : Text;
+    txHash : Text;
+  };
+
+  public type StakeResult = {
+    ethStaked : Nat;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    txHash : Text;
+  };
+
+  public type WrapResult = {
+    approvalTxHash : ?Text;
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    stEthWrapped : Nat;
+    txHash : Text;
+  };
+
+  public type UnwrapResult = {
+    nonce : Nat;
+    note : Text;
+    senderAddress : Text;
+    txHash : Text;
+    wstEthUnwrapped : Nat;
+  };
+
+  public type ExecutionStage = {
+    #ACTIVATED;
+    #ADDRESS_GENERATED;
+    #BROADCASTING;
+    #BUILT_TX;
+    #CHECKED;
+    #CONFIG_UPDATED;
+    #CONFIRMED;
+    #DCA_EXECUTED;
+    #EXECUTING;
+    #FAILED;
+    #PNL_REPORTED;
+    #POSITION_CREATED;
+    #RULE_CREATED;
+    #SENT;
+    #SIGNING;
+    #TRIGGERED;
+    #VALIDATED;
+  };
 
   public type ExecutionLog = {
-    action : Text;
     error : ?Text;
-    executedAt : Int;
-    result : Text;
-    ruleId : Nat;
-    success : Bool;
+    intent_hash : Text;
+    rule_id : Text;
+    stage : ExecutionStage;
+    ts : Int;
+    tx_id : ?Text;
   };
 
   // ============================================================
@@ -375,6 +562,7 @@ module {
 
   public type Tier = {
     #Free;
+    #Basic;
     #Developer;
     #Pro;
     #Enterprise;
@@ -399,22 +587,6 @@ module {
   };
 
   // ============================================================
-  // BRIDGE TYPES
-  // ============================================================
-
-  public type OutputToken = {
-    #SOL;
-    #Token : Text;
-    #USDC;
-  };
-
-  /// CCTP/SolToEth bridge result — returned by quickCctpBridge, quickSolToEth, quickUsdcBridgeSolToEth
-  public type BridgeJobResult = {
-    jobId : Text;
-    userUsdcAta : Text;
-  };
-
-  // ============================================================
   // REMOTE ACTOR TYPE — all public functions
   // ============================================================
 
@@ -436,6 +608,22 @@ module {
     getMyThorAddress : shared () -> async AddressInfo;
     getMySolanaAta : shared (Text) -> async Text;
 
+    // Batch — get ALL chain addresses in one call (19 chains)
+    getAllAddresses : shared () -> async {
+      aptos : AptosAddressInfo;
+      bitcoin : AddressInfo;
+      cardano : CardanoAddressInfo;
+      evm : EvmAddressInfo;
+      litecoin : AddressInfo;
+      near : PubKeyInfo;
+      solana : SolanaAddressInfo;
+      sui : SuiAddressInfo;
+      thorchain : AddressInfo;
+      ton : TonAddressInfo;
+      tron : TronAddressInfo;
+      xrp : XrpAddressInfo;
+    };
+
     // ─── BALANCES (FREE) ────────────────────────────────────
     getMySolanaBalance : shared () -> async Result.Result<Nat64, Text>;
     getMyEvmBalance : shared (rpcEndpoint : Text) -> async Result.Result<Nat, Text>;
@@ -452,9 +640,27 @@ module {
     getCloakBalance : shared () -> async Result.Result<{ address : Text; balance : Nat64; utxoCount : Nat }, Text>;
     getTrxBalance : shared (Text) -> async Result.Result<Nat64, Text>;
     getICRC1Balance : shared (Text) -> async Result.Result<Nat, Text>;
+    getICPBalanceFor : shared (Principal) -> async Result.Result<Nat64, Text>;
+    getICRC1BalanceFor : shared (Principal, Text) -> async Result.Result<Nat, Text>;
+    getICRC1TokenInfo : shared (Text) -> async Result.Result<{ canisterId : Text; decimals : Nat8; fee : Nat; name : Text; symbol : Text }, Text>;
+    getSupportedICPTokens : shared query () -> async [{ name : Text; symbol : Text; canisterId : Text; type_ : Text; category : Text }];
     getMyTrc20Balance : shared (Text) -> async Result.Result<Nat, Text>;
 
-    // ─── SEND — ALL CHAINS ($0.05) ─────────────────────────
+    // Batch — get ALL native balances in one call (parallel fetch)
+    getAllBalances : shared () -> async {
+      aptos : Result.Result<Nat64, Text>;
+      bitcoin : Nat64;
+      cardano : Result.Result<Nat64, Text>;
+      icp : Result.Result<Nat64, Text>;
+      litecoin : Nat64;
+      near : Nat;
+      solana : Result.Result<Nat64, Text>;
+      thorchain : [{ amount : Nat; denom : Text }];
+      ton : Result.Result<Nat64, Text>;
+      xrp : Result.Result<Text, Text>;
+    };
+
+    // ─── SEND — ALL CHAINS (1 action) ─────────────────────
 
     // Solana
     sendSolTransaction : shared (toAddress : Text, lamports : Nat64) -> async Result.Result<Text, Text>;
@@ -468,6 +674,7 @@ module {
     sendICRC1 : shared (to : Principal, amount : Nat, ledgerCanisterId : Text) -> async Result.Result<SendICRC1Result, Text>;
     transferFromICRC2 : shared (from : Principal, to : Principal, amount : Nat, ledgerCanisterId : Text) -> async Result.Result<{ amount : Nat; blockHeight : Nat; from : Principal; to : Principal; token : Text }, Text>;
     approveICRC2 : shared (spender : Principal, amount : Nat, expiresAt : ?Nat64, ledgerCanisterId : Text) -> async Result.Result<{ amount : Nat; blockHeight : Nat; spender : Principal; token : Text }, Text>;
+    getICRC2Allowance : shared (owner : Principal, spender : Principal, ledgerCanisterId : Text) -> async Result.Result<{ allowance : Nat; expires_at : ?Nat64 }, Text>;
 
     // Bitcoin
     sendBitcoin : shared (toAddress : Text, amount : Nat64) -> async Result.Result<SendResultBtcLtc, Text>;
@@ -512,7 +719,7 @@ module {
     // Thorchain
     sendThor : shared (toAddress : Text, amount : Nat64, memo : Text) -> async Result.Result<Text, Text>;
 
-    // ─── SWAP — 6 DEXes ($0.075) ───────────────────────────
+    // ─── SWAP — 6 DEXes (1 action) ─────────────────────────
 
     // Raydium (Solana) — 8 params
     swapRaydiumApiUser : shared (inputMint : Text, outputMint : Text, amount : Nat64, slippageBps : Nat64, wrapSol : Bool, unwrapSol : Bool, inputAta : ?Text, outputAta : ?Text) -> async RaydiumApiSwapResult;
@@ -525,6 +732,16 @@ module {
 
     // ICPSwap + KongSwap (ICP) — routes to best price
     executeICPDexSwap : shared (SwapRequest) -> async Result.Result<SwapResultIcp, Text>;
+
+    // ICP DEX LP Management
+    getICPLPPositions : shared () -> async [LPPosition];
+    addICPLiquidity : shared (AddLiquidityRequest) -> async Result.Result<AddLiquidityResult, Text>;
+    removeICPLiquidity : shared (RemoveLiquidityRequest) -> async Result.Result<RemoveLiquidityResult, Text>;
+    getICPDexPools : shared () -> async [PoolInfo];
+    getICPDexTokens : shared () -> async [DexToken];
+
+    // ICP AI Rebalancer
+    getICPRebalanceRecommendations : shared (RebalancePreferences, [(Text, Nat)], ?[PoolInfo]) -> async [RebalanceRecommendation];
 
     // Cetus (SUI)
     executeSuiSwap : shared ({ #mainnet; #testnet; #devnet }, fromToken : Text, toToken : Text, amountIn : Text, minAmountOut : Text) -> async SwapResultSui;
@@ -542,20 +759,6 @@ module {
     getMinswapQuote : shared (tokenIn : Text, tokenOut : Text, amountIn : Nat64, slippagePct : Float) -> async Result.Result<{ aggregator_fee : Text; amount_in : Text; amount_out : Text; avg_price_impact : Text; min_amount_out : Text; paths_json : Text; rawJson : Text; success : Bool; token_in : Text; token_out : Text; total_dex_fee : Text; total_lp_fee : Text }, Text>;
     getTokenQuote : shared (fromSymbol : Text, toSymbol : Text, amountIn : Nat, rpcEndpoint : Text) -> async Result.Result<{ amountIn : Nat; amountOut : Nat; fromToken : Text; toToken : Text; path : [Text] }, Text>;
     xrpFindPaths : shared (destinationAmount : TokenAmount, sourceCurrencies : [TokenAmount]) -> async { destinationAmount : TokenAmount; message : Text; paths : Text; sourceAmount : TokenAmount; success : Bool };
-
-    // ─── BRIDGE — ETH→SOL ($0.10) ──────────────────────────
-
-    // Quick bridges — ETH→SOL (returns Result<Text, Text>, ok = status text)
-    quickUltrafastEthToSol : shared (ethAmountWei : Nat) -> async Result.Result<Text, Text>;
-    quickUltrafastUsdcToSol : shared (usdcAmount : Nat) -> async Result.Result<Text, Text>;
-    quickUltrafastEthToToken : shared (ethAmountWei : Nat, outputMint : Text, slippageBps : Nat) -> async Result.Result<Text, Text>;
-
-    // CCTP bridge (returns BridgeJobResult with jobId + userUsdcAta)
-    quickCctpBridge : shared (sourceChainId : Nat, usdcAmount : Nat, outputToken : Text, useFastMode : Bool, slippageBps : Nat, ethRpc : Text) -> async Result.Result<BridgeJobResult, Text>;
-
-    // SOL→ETH bridges (returns BridgeJobResult with jobId + userUsdcAta)
-    quickSolToEth : shared (solAmountLamports : Nat64, slippageBps : Nat) -> async Result.Result<BridgeJobResult, Text>;
-    quickUsdcBridgeSolToEth : shared (usdcAmount : Nat64) -> async Result.Result<BridgeJobResult, Text>;
 
     // ─── SOLANA ATA CREATION ────────────────────────────────
     createMySolanaAtaForMint : shared (mintBase58 : Text, ataBase58 : Text) -> async CreateAtaResult;
@@ -580,7 +783,49 @@ module {
     validateDeveloperKey : shared query (Text) -> async Bool;
     getMyGatewayAccount : shared () -> async UserAccount;
     getMyDeveloperAccount : shared () -> async ?DeveloperAccountV3;
-    depositGatewayCredits : shared (Text, Nat) -> async Result.Result<{ id : Nat }, Text>;
+    depositGatewayCredits : shared (Text, Nat) -> async Result.Result<{ amount : Nat; currency : Text; id : Nat; ledgerCanisterId : Text; timestamp : Int; usdValueMicroUsd : Nat; user : Principal }, Text>;
+    purchaseGatewayPackage : shared (Tier, Text) -> async Result.Result<UserAccount, Text>;
+
+    // ─── SIGN-ONLY ENDPOINTS (1 action) ────────────────────
+    // Frontend fetches chain data (blockhash, UTXOs, gas) → calls these → broadcasts.
+    // No HTTP outcalls by the canister — cheaper in cycles.
+    signSolTransferRelayer : shared (toAddress : Text, lamports : Nat64, blockhashBase58 : Text) -> async { signedTxBase64 : Text; txMessage : [Nat8]; signature : [Nat8]; publicKey : [Nat8] };
+    signSolSwapTxsRelayer : shared (txBase64Array : [Text]) -> async [{ signedTxBase64 : Text; signature : [Nat8] }];
+    buildAndSignEvmTxWithData : shared (to : Text, value : Nat, data : [Nat8], nonce : Nat, gasLimit : Nat, gasPrice : Nat, chainId : Nat) -> async { rawTxHex_v0 : Text; rawTxHex_v1 : Text; txHash : Text; signature : Text };
+    signNearTransferRelayer : shared (recipientId : Text, amountYocto : Nat, nonce : Nat64, blockHash : [Nat8]) -> async { signedTxBytes : [Nat8]; txHash : [Nat8]; senderAccountId : Text };
+    signAptosTransferRelayer : shared (toAddress : Text, amount : Nat64, sequenceNumber : Nat64, chainId : Nat8, expirationTimestampSecs : Nat64) -> async { signedTxBcs : [Nat8]; txHash : [Nat8]; senderAddress : Text };
+    signTonTransferRelayer : shared (toAddress : Text, amountNanoton : Nat64, seqno : Nat32, bounce : Bool, comment : ?Text, timeoutSeconds : Nat32, accountState : Text) -> async { bocBase64 : Text; senderAddress : Text; payloadHash : [Nat8] };
+    signSuiTransferRelayer : shared (recipientAddress : Text, amount : Nat64, gasCoinId : Text, gasCoinVersion : Nat64, gasCoinDigest : Text) -> async { txBytesBase64 : Text; signatureBase64 : Text; senderAddress : Text };
+    signCardanoTransferRelayer : shared (recipient : Text, amountLovelace : Nat64, utxos : [{ tx_hash : Text; tx_index : Nat64; value : Nat64 }], senderBech32 : Text) -> async Result.Result<{ signedTxCbor : [Nat8]; txHash : [Nat8] }, Text>;
+    signXrpTransferRelayer : shared (destAddress : Text, amountXrp : Text, sequence : Nat32, lastLedgerSeq : Nat32, fee : Nat64, destinationTag : ?Nat32) -> async { signedTxHex : Text; txHash : Text; senderAddress : Text; publicKeyHex : Text };
+    signTrxTransferRelayer : shared (toAddress : Text, amountSun : Nat64, refBlockBytes : [Nat8], refBlockHash : [Nat8], expiration : Int64, timestamp : Int64) -> async Result.Result<{ txHex1b : Text; txHex1c : Text; txID : Text; senderAddress : Text }, Text>;
+
+    // ─── DEFI — AAVE V3 (1 action) ─────────────────────────
+    aaveSupplyEth : shared (ethAmountWei : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<SupplyEthResult, Text>;
+    aaveWithdrawEth : shared (amountWei : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<WithdrawEthResult, Text>;
+    aaveSupplyToken : shared (tokenAddress : Text, amount : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<SupplyTokenResult, Text>;
+    aaveWithdrawToken : shared (tokenAddress : Text, amount : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<WithdrawTokenResult, Text>;
+    getAWethBalance : shared (user : Text, rpcEndpoint : Text) -> async Result.Result<Nat, Text>;
+    getATokenBalance : shared (aTokenAddress : Text, user : Text, rpcEndpoint : Text) -> async Result.Result<Nat, Text>;
+
+    // ─── DEFI — LIDO STAKING (1 action) ────────────────────
+    stakeEthForStEth : shared (ethAmountWei : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<StakeResult, Text>;
+    wrapStEth : shared (amountStEth : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<WrapResult, Text>;
+    unwrapWstEth : shared (amountWstEth : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<UnwrapResult, Text>;
+    getStEthBalance : shared (user : Text, rpcEndpoint : Text) -> async Result.Result<Nat, Text>;
+    getWstEthBalance : shared (user : Text, rpcEndpoint : Text) -> async Result.Result<Nat, Text>;
+
+    // ─── DEFI — UNISWAP V3 LIQUIDITY (1 action) ───────────
+    addLiquidityETH : shared (tokenSymbol : Text, amountTokenDesired : Nat, amountETHDesired : Nat, slippageBps : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<{ txHash : Text; senderAddress : Text; nonce : Nat; tokenAddress : Text; amountTokenDesired : Nat; amountETHDesired : Nat; amountTokenMin : Nat; amountETHMin : Nat; approvalTxHash : ?Text; note : Text }, Text>;
+    addLiquidity : shared (tokenASymbol : Text, tokenBSymbol : Text, amountADesired : Nat, amountBDesired : Nat, slippageBps : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<{ txHash : Text; senderAddress : Text; nonce : Nat; tokenA : Text; tokenB : Text; amountADesired : Nat; amountBDesired : Nat; amountAMin : Nat; amountBMin : Nat; approvalTxHashA : ?Text; approvalTxHashB : ?Text; note : Text }, Text>;
+    removeLiquidityETH : shared (tokenSymbol : Text, lpTokenAmount : Nat, slippageBps : Nat, useFeeOnTransfer : Bool, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<{ txHash : Text; senderAddress : Text; nonce : Nat; tokenAddress : Text; lpTokensBurned : Nat; minTokenOut : Nat; minETHOut : Nat; approvalTxHash : ?Text; note : Text }, Text>;
+    removeLiquidity : shared (tokenASymbol : Text, tokenBSymbol : Text, lpTokenAmount : Nat, slippageBps : Nat, rpcEndpoint : Text, quoteId : ?Text) -> async Result.Result<{ txHash : Text; senderAddress : Text; nonce : Nat; tokenA : Text; tokenB : Text; lpTokensBurned : Nat; minAmountAOut : Nat; minAmountBOut : Nat; approvalTxHash : ?Text; note : Text }, Text>;
+    getPairAddress : shared (tokenA : Text, tokenB : Text, rpcEndpoint : Text) -> async Result.Result<{ tokenA : Text; tokenB : Text; pairAddress : Text }, Text>;
+    getPoolReserves : shared (tokenA : Text, tokenB : Text, rpcEndpoint : Text) -> async Result.Result<{ pairAddress : Text; reserve0 : Nat; reserve1 : Nat; token0 : Text; token1 : Text; blockTimestampLast : Nat }, Text>;
+
+    // ─── DEFI — CUSTOM EVM CONTRACTS (1 action write / FREE read)
+    callEvmContractWrite : shared (contract : Text, functionSelector : Text, argsHexes : [Text], rpcEndpoint : Text, chainId : Nat, value : Nat, quoteId : ?Text) -> async Result.Result<SendResultEvm, Text>;
+    callEvmContractRead : shared (contract : Text, functionSelector : Text, argsHexes : [Text], rpcEndpoint : Text) -> async Result.Result<Text, Text>;
 
     // ─── UTILITY (FREE) ────────────────────────────────────
     getBitcoinMaxSendAmount : shared (?Nat64) -> async Result.Result<{ maxAmount : Nat64; fee : Nat64; utxoCount : Nat }, Text>;

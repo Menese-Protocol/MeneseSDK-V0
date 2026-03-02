@@ -1,12 +1,12 @@
-// menese-config.ts — Shared config for all MeneseSDK frontend examples
+// sdk-setup.ts — Shared config for all MeneseSDK frontend examples
 //
 // Copy this file into your project alongside any example.
 // Full Candid interface:
 //   https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=urs2a-ziaaa-aaaad-aembq-cai
 //
-// Two modes:
-//   - Agent Mode: Frontend calls canister directly (HTTP outcalls, more expensive)
-//   - Client Mode: Frontend calls relay API → canister signs only (cheaper)
+// Two integration patterns:
+//   - Full Execution: Frontend calls canister → canister handles RPC + signing + broadcast
+//   - Sign-Only: Frontend fetches chain data → canister signs → frontend broadcasts (cheaper in cycles)
 
 import { HttpAgent, Actor, ActorSubclass } from "@dfinity/agent";
 import { IDL } from "@dfinity/candid";
@@ -22,9 +22,6 @@ export const IC_HOST = "https://icp0.io";
 
 // Your developer key (get one by calling registerDeveloperCanister)
 export const DEVELOPER_KEY = ""; // e.g. "msk_2e8829391e9e81f78ff604f1ea59c690"
-
-// Relay URL for Client Mode (cheaper: $0.05/$0.075/$0.10 vs Agent Mode: $0.10/$0.15/$0.20)
-export const RELAY_URL = process.env.RELAY_URL || "https://relay.menese.io";
 
 // ============================================================
 // CANDID INTERFACE (matches backend.did exactly)
@@ -269,7 +266,7 @@ export const idlFactory = ({ IDL }: any) => {
   const UserAccount = IDL.Record({
     creditsMicroUsd: IDL.Nat,
     tier: IDL.Variant({
-      Free: IDL.Null, Developer: IDL.Null, Pro: IDL.Null, Enterprise: IDL.Null,
+      Free: IDL.Null, Basic: IDL.Null, Developer: IDL.Null, Pro: IDL.Null, Enterprise: IDL.Null,
     }),
     actionsRemaining: IDL.Nat,
     subscriptionExpiry: IDL.Opt(IDL.Int),
@@ -326,11 +323,11 @@ export const idlFactory = ({ IDL }: any) => {
     getICRC1Balance: IDL.Func([IDL.Text], [ResultNat], []),       // ledgerCanisterId
     getICPBalanceFor: IDL.Func([IDL.Principal], [ResultNat64], []),
     getICRC1BalanceFor: IDL.Func([IDL.Principal, IDL.Text], [ResultNat], []),
-    getICRC1TokenInfo: IDL.Func([IDL.Text], [IDL.Variant({ ok: IDL.Record({ name: IDL.Text, symbol: IDL.Text, decimals: IDL.Nat8, fee: IDL.Nat, totalSupply: IDL.Nat }), err: IDL.Text })], []),
+    getICRC1TokenInfo: IDL.Func([IDL.Text], [IDL.Variant({ ok: IDL.Record({ canisterId: IDL.Text, decimals: IDL.Nat8, fee: IDL.Nat, name: IDL.Text, symbol: IDL.Text }), err: IDL.Text })], []),
     getSupportedICPTokens: IDL.Func([], [IDL.Vec(IDL.Record({ name: IDL.Text, symbol: IDL.Text, canisterId: IDL.Text, type_: IDL.Text, category: IDL.Text }))], ["query"]),
     getMyTrc20Balance: IDL.Func([IDL.Text], [ResultNat], []),     // contractAddress
 
-    // === SEND — ALL CHAINS ($0.05) ===
+    // === SEND — ALL CHAINS (1 action) ===
 
     // Solana
     sendSolTransaction: IDL.Func([IDL.Text, IDL.Nat64], [Result], []),
@@ -360,7 +357,7 @@ export const idlFactory = ({ IDL }: any) => {
     ),
     getICRC2Allowance: IDL.Func(
       [IDL.Principal, IDL.Principal, IDL.Text],  // owner, spender, ledgerCanisterId
-      [IDL.Variant({ ok: IDL.Record({ allowance: IDL.Nat, expiresAt: IDL.Opt(IDL.Nat64) }), err: IDL.Text })], []
+      [IDL.Variant({ ok: IDL.Record({ allowance: IDL.Nat, expires_at: IDL.Opt(IDL.Nat64) }), err: IDL.Text })], []
     ),
     transferFromICRC2: IDL.Func(
       [IDL.Principal, IDL.Principal, IDL.Nat, IDL.Text],  // from, to, amount, ledgerCanisterId
@@ -415,7 +412,7 @@ export const idlFactory = ({ IDL }: any) => {
     // Thorchain
     sendThor: IDL.Func([IDL.Text, IDL.Nat64, IDL.Text], [Result], []),
 
-    // === SWAP — 6 DEXes ($0.075) ===
+    // === SWAP — 6 DEXes (1 action) ===
 
     // Raydium (Solana) — 8 params, returns flat record (NOT variant)
     swapRaydiumApiUser: IDL.Func(
@@ -523,6 +520,7 @@ export const idlFactory = ({ IDL }: any) => {
         best: IDL.Record({ amountIn: IDL.Nat, amountOut: IDL.Nat, dex: DexId, fee: IDL.Nat, minAmountOut: IDL.Nat, success: IDL.Bool, tokenIn: IDL.Text, tokenOut: IDL.Text, poolId: IDL.Opt(IDL.Text), priceImpactPct: IDL.Text, rawData: IDL.Text, route: IDL.Vec(IDL.Text) }),
         icpswapQuote: IDL.Opt(IDL.Record({ amountIn: IDL.Nat, amountOut: IDL.Nat, dex: DexId, fee: IDL.Nat, minAmountOut: IDL.Nat, success: IDL.Bool, tokenIn: IDL.Text, tokenOut: IDL.Text, poolId: IDL.Opt(IDL.Text), priceImpactPct: IDL.Text, rawData: IDL.Text, route: IDL.Vec(IDL.Text) })),
         kongswapQuote: IDL.Opt(IDL.Record({ amountIn: IDL.Nat, amountOut: IDL.Nat, dex: DexId, fee: IDL.Nat, minAmountOut: IDL.Nat, success: IDL.Bool, tokenIn: IDL.Text, tokenOut: IDL.Text, poolId: IDL.Opt(IDL.Text), priceImpactPct: IDL.Text, rawData: IDL.Text, route: IDL.Vec(IDL.Text) })),
+        timestamp: IDL.Int,
       })], []
     ),
     getSuiSwapQuote: IDL.Func(
@@ -536,27 +534,6 @@ export const idlFactory = ({ IDL }: any) => {
     getTokenQuote: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Record({ amountIn: IDL.Nat, amountOut: IDL.Nat, fromToken: IDL.Text, toToken: IDL.Text, path: IDL.Vec(IDL.Text) }), err: IDL.Text })], []
-    ),
-
-    // === BRIDGE ($0.10) ===
-
-    // ETH→SOL (returns Result = {ok: text, err: text})
-    quickUltrafastEthToSol: IDL.Func([IDL.Nat], [Result], []),
-    quickUltrafastUsdcToSol: IDL.Func([IDL.Nat], [Result], []),
-    quickUltrafastEthToToken: IDL.Func([IDL.Nat, IDL.Text, IDL.Nat], [Result], []),
-
-    // CCTP & SOL→ETH (returns {ok: {jobId, userUsdcAta}, err: text})
-    quickCctpBridge: IDL.Func(
-      [IDL.Nat, IDL.Nat, IDL.Text, IDL.Bool, IDL.Nat, IDL.Text],
-      [IDL.Variant({ ok: IDL.Record({ jobId: IDL.Text, userUsdcAta: IDL.Text }), err: IDL.Text })], []
-    ),
-    quickSolToEth: IDL.Func(
-      [IDL.Nat64, IDL.Nat],
-      [IDL.Variant({ ok: IDL.Record({ jobId: IDL.Text, userUsdcAta: IDL.Text }), err: IDL.Text })], []
-    ),
-    quickUsdcBridgeSolToEth: IDL.Func(
-      [IDL.Nat64],
-      [IDL.Variant({ ok: IDL.Record({ jobId: IDL.Text, userUsdcAta: IDL.Text }), err: IDL.Text })], []
     ),
 
     // === SOLANA ATA CREATION ===
@@ -576,14 +553,171 @@ export const idlFactory = ({ IDL }: any) => {
     getMyDeveloperAccount: IDL.Func([], [IDL.Opt(DeveloperAccountV3)], []),
     depositGatewayCredits: IDL.Func(
       [IDL.Text, IDL.Nat],
-      [IDL.Variant({ ok: IDL.Record({ id: IDL.Nat }), err: IDL.Text })], []
+      [IDL.Variant({ ok: IDL.Record({
+        amount: IDL.Nat, currency: IDL.Text, id: IDL.Nat, ledgerCanisterId: IDL.Text,
+        timestamp: IDL.Int, usdValueMicroUsd: IDL.Nat, user: IDL.Principal,
+      }), err: IDL.Text })], []
+    ),
+    purchaseGatewayPackage: IDL.Func(
+      [IDL.Variant({ Free: IDL.Null, Basic: IDL.Null, Developer: IDL.Null, Pro: IDL.Null, Enterprise: IDL.Null }), IDL.Text],
+      [IDL.Variant({ ok: IDL.Record({
+        actionsRemaining: IDL.Nat, actionsUsed: IDL.Nat, createdAt: IDL.Int,
+        creditsMicroUsd: IDL.Nat, subscriptionExpiry: IDL.Opt(IDL.Int),
+        tier: IDL.Variant({ Free: IDL.Null, Basic: IDL.Null, Developer: IDL.Null, Pro: IDL.Null, Enterprise: IDL.Null }),
+        totalDepositedMicroUsd: IDL.Nat,
+      }), err: IDL.Text })], []
     ),
 
-    // === RELAY SIGN-ONLY ENDPOINTS (Client Mode — cheaper) ===
-    // These are called by the relay service worker, not directly by frontends.
-    // Listed here for completeness and self-hosted relay setups.
+    // === BATCH ENDPOINTS (FREE) ===
+    getAllAddresses: IDL.Func([], [IDL.Record({
+      aptos: AptosAddressInfo, bitcoin: AddressInfo, cardano: CardanoAddressInfo,
+      evm: EvmAddressInfo, litecoin: AddressInfo, near: PubKeyInfo,
+      solana: SolanaAddressInfo, sui: SuiAddressInfo, thorchain: AddressInfo,
+      ton: TonAddressInfo, tron: TronAddressInfo, xrp: XrpAddressInfo,
+    })], []),
+    getAllBalances: IDL.Func([], [IDL.Record({
+      aptos: IDL.Variant({ ok: IDL.Nat64, err: IDL.Text }),
+      bitcoin: IDL.Nat64,
+      cardano: IDL.Variant({ ok: IDL.Nat64, err: IDL.Text }),
+      icp: IDL.Variant({ ok: IDL.Nat64, err: IDL.Text }),
+      litecoin: IDL.Nat64,
+      near: IDL.Nat,
+      solana: IDL.Variant({ ok: IDL.Nat64, err: IDL.Text }),
+      thorchain: IDL.Vec(IDL.Record({ amount: IDL.Nat, denom: IDL.Text })),
+      ton: IDL.Variant({ ok: IDL.Nat64, err: IDL.Text }),
+      xrp: Result,
+    })], []),
 
-    // SOL relay ($0.05/sign, $0.075/swap)
+    // === DEFI — AAVE V3 (1 action) ===
+    aaveSupplyEth: IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // ethAmountWei, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ ethSupplied: IDL.Nat, nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    aaveWithdrawEth: IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // amountWei, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ approvalTxHash: IDL.Opt(IDL.Text), ethWithdrawn: IDL.Nat, nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    aaveSupplyToken: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // tokenAddress, amount, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ amountSupplied: IDL.Nat, approvalTxHash: IDL.Opt(IDL.Text), nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, tokenAddress: IDL.Text, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    aaveWithdrawToken: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // tokenAddress, amount, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ amountWithdrawn: IDL.Nat, nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, tokenAddress: IDL.Text, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    getAWethBalance: IDL.Func([IDL.Text, IDL.Text], [ResultNat], []),  // user, rpcEndpoint
+    getATokenBalance: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultNat], []),  // aTokenAddress, user, rpcEndpoint
+
+    // === DEFI — LIDO STAKING (1 action) ===
+    stakeEthForStEth: IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // ethAmountWei, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ ethStaked: IDL.Nat, nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    wrapStEth: IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // amountStEth, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ approvalTxHash: IDL.Opt(IDL.Text), nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, stEthWrapped: IDL.Nat, txHash: IDL.Text }), err: IDL.Text })], []
+    ),
+    unwrapWstEth: IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],  // amountWstEth, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({ nonce: IDL.Nat, note: IDL.Text, senderAddress: IDL.Text, txHash: IDL.Text, wstEthUnwrapped: IDL.Nat }), err: IDL.Text })], []
+    ),
+    getStEthBalance: IDL.Func([IDL.Text, IDL.Text], [ResultNat], []),  // user, rpcEndpoint
+    getWstEthBalance: IDL.Func([IDL.Text, IDL.Text], [ResultNat], []),  // user, rpcEndpoint
+
+    // === DEFI — UNISWAP V3 LIQUIDITY (1 action) ===
+    addLiquidityETH: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],
+      // tokenSymbol, amountTokenDesired, amountETHDesired, slippageBps, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({
+        txHash: IDL.Text, senderAddress: IDL.Text, nonce: IDL.Nat,
+        tokenAddress: IDL.Text, amountTokenDesired: IDL.Nat, amountETHDesired: IDL.Nat,
+        amountTokenMin: IDL.Nat, amountETHMin: IDL.Nat,
+        approvalTxHash: IDL.Opt(IDL.Text), note: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+    addLiquidity: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],
+      // tokenASymbol, tokenBSymbol, amountADesired, amountBDesired, slippageBps, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({
+        txHash: IDL.Text, senderAddress: IDL.Text, nonce: IDL.Nat,
+        tokenA: IDL.Text, tokenB: IDL.Text,
+        amountADesired: IDL.Nat, amountBDesired: IDL.Nat,
+        amountAMin: IDL.Nat, amountBMin: IDL.Nat,
+        approvalTxHashA: IDL.Opt(IDL.Text), approvalTxHashB: IDL.Opt(IDL.Text), note: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+    removeLiquidityETH: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool, IDL.Text, IDL.Opt(IDL.Text)],
+      // tokenSymbol, lpTokenAmount, slippageBps, useFeeOnTransfer, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({
+        txHash: IDL.Text, senderAddress: IDL.Text, nonce: IDL.Nat,
+        tokenAddress: IDL.Text, lpTokensBurned: IDL.Nat,
+        minTokenOut: IDL.Nat, minETHOut: IDL.Nat,
+        approvalTxHash: IDL.Opt(IDL.Text), note: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+    removeLiquidity: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],
+      // tokenASymbol, tokenBSymbol, lpTokenAmount, slippageBps, rpcEndpoint, quoteId
+      [IDL.Variant({ ok: IDL.Record({
+        txHash: IDL.Text, senderAddress: IDL.Text, nonce: IDL.Nat,
+        tokenA: IDL.Text, tokenB: IDL.Text, lpTokensBurned: IDL.Nat,
+        minAmountAOut: IDL.Nat, minAmountBOut: IDL.Nat,
+        approvalTxHash: IDL.Opt(IDL.Text), note: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+    getPairAddress: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],  // tokenA, tokenB, rpcEndpoint
+      [IDL.Variant({ ok: IDL.Record({ tokenA: IDL.Text, tokenB: IDL.Text, pairAddress: IDL.Text }), err: IDL.Text })], []
+    ),
+    getPoolReserves: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],  // tokenA, tokenB, rpcEndpoint
+      [IDL.Variant({ ok: IDL.Record({ pairAddress: IDL.Text, reserve0: IDL.Nat, reserve1: IDL.Nat, token0: IDL.Text, token1: IDL.Text, blockTimestampLast: IDL.Nat }), err: IDL.Text })], []
+    ),
+
+    // === CUSTOM EVM CONTRACTS (1 action write / FREE read) ===
+    callEvmContractRead: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Text],  // contract, functionSelector, argsHexes, rpcEndpoint
+      [Result], []
+    ),
+    callEvmContractWrite: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Text, IDL.Nat, IDL.Nat, IDL.Opt(IDL.Text)],
+      // contract, functionSelector, argsHexes, rpcEndpoint, chainId, value, quoteId
+      [IDL.Variant({ ok: SendResultEvm, err: IDL.Text })], []
+    ),
+
+    // === MULTI-HOP SWAP (1 action) ===
+    swapTokensMultiHop: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool, IDL.Nat, IDL.Text],
+      // fromSymbol, toSymbol, amountIn, slippageBps, useFeeOnTransfer, chainId, rpcEndpoint
+      [IDL.Variant({ ok: IDL.Record({
+        amountIn: IDL.Nat, approvalTxHash: IDL.Opt(IDL.Text), expectedTxHash: IDL.Text,
+        isDirect: IDL.Bool, minAmountOut: IDL.Nat, nonce: IDL.Nat, note: IDL.Text,
+        path: IDL.Vec(IDL.Text), pathSymbols: IDL.Vec(IDL.Text), senderAddress: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+
+    // === ADDITIONAL QUOTES (FREE) ===
+    getTokenQuoteMultiHop: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],  // fromSymbol, toSymbol, amountIn, rpcEndpoint
+      [IDL.Variant({ ok: IDL.Record({
+        amountIn: IDL.Nat, amountOut: IDL.Nat, fromToken: IDL.Text, toToken: IDL.Text,
+        isDirect: IDL.Bool, path: IDL.Vec(IDL.Text), pathSymbols: IDL.Vec(IDL.Text), routeNote: IDL.Text,
+      }), err: IDL.Text })], []
+    ),
+    xrpFindPaths: IDL.Func(
+      [TokenAmount, IDL.Vec(TokenAmount)],  // destinationAmount, sourceCurrencies
+      [IDL.Record({
+        destinationAmount: TokenAmount, message: IDL.Text, paths: IDL.Text,
+        sourceAmount: TokenAmount, success: IDL.Bool,
+      })], []
+    ),
+
+    // === SIGN-ONLY ENDPOINTS (1 action each) ===
+    // Frontend fetches chain data (blockhash, UTXOs, gas) → calls these → broadcasts.
+    // No HTTP outcalls by the canister — cheaper in cycles.
+
+    // SOL sign-only
     signSolTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64, IDL.Text],  // toAddress, lamports, blockhashBase58
       [IDL.Record({
@@ -596,7 +730,7 @@ export const idlFactory = ({ IDL }: any) => {
       [IDL.Vec(IDL.Record({ signedTxBase64: IDL.Text, signature: IDL.Vec(IDL.Nat8) }))], []
     ),
 
-    // EVM relay ($0.05)
+    // EVM sign-only
     buildAndSignEvmTxWithData: IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Vec(IDL.Nat8), IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat],
       // to, value, data, nonce, gasLimit, gasPrice, chainId
@@ -606,7 +740,7 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // NEAR relay ($0.05)
+    // NEAR sign-only
     signNearTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Nat64, IDL.Vec(IDL.Nat8)],  // recipientId, amountYocto, nonce, blockHash
       [IDL.Record({
@@ -614,7 +748,7 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // Aptos relay ($0.05)
+    // Aptos sign-only
     signAptosTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64, IDL.Nat64, IDL.Nat8, IDL.Nat64],
       // toAddress, amount, sequenceNumber, chainId, expirationTimestampSecs
@@ -623,14 +757,14 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // TON relay ($0.05)
+    // TON sign-only
     signTonTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64, IDL.Nat32, IDL.Bool, IDL.Opt(IDL.Text), IDL.Nat32, IDL.Text],
       // toAddress, amountNanoton, seqno, bounce, comment, timeoutSeconds, accountState
       [IDL.Record({ bocBase64: IDL.Text, senderAddress: IDL.Text, payloadHash: IDL.Vec(IDL.Nat8) })], []
     ),
 
-    // SUI relay ($0.05)
+    // SUI sign-only
     signSuiTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64, IDL.Text, IDL.Nat64, IDL.Text],
       // recipientAddress, amount, gasCoinId, gasCoinVersion, gasCoinDigest
@@ -639,7 +773,7 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // Cardano relay ($0.05)
+    // Cardano sign-only
     signCardanoTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64,
        IDL.Vec(IDL.Record({ tx_hash: IDL.Text, tx_index: IDL.Nat64, value: IDL.Nat64 })),
@@ -650,7 +784,7 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // XRP relay ($0.05)
+    // XRP sign-only
     signXrpTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat32, IDL.Nat32, IDL.Nat64, IDL.Opt(IDL.Nat32)],
       // destAddress, amountXrp, sequence, lastLedgerSeq, fee, destinationTag
@@ -660,7 +794,7 @@ export const idlFactory = ({ IDL }: any) => {
       })], []
     ),
 
-    // TRON relay ($0.05)
+    // TRON sign-only
     signTrxTransferRelayer: IDL.Func(
       [IDL.Text, IDL.Nat64, IDL.Vec(IDL.Nat8), IDL.Vec(IDL.Nat8), IDL.Int64, IDL.Int64],
       // toAddress, amountSun, refBlockBytes, refBlockHash, expiration, timestamp
@@ -670,6 +804,151 @@ export const idlFactory = ({ IDL }: any) => {
         }),
         err: IDL.Text,
       })], []
+    ),
+
+    // === STRATEGY ENGINE (1 action per creation, 1 per execution) ===
+    addStrategyRule: IDL.Func(
+      [IDL.Record({
+        id: IDL.Nat,
+        positionId: IDL.Nat,
+        ruleType: IDL.Variant({
+          TakeProfit: IDL.Null, StopLoss: IDL.Null, DCA: IDL.Null,
+          Rebalance: IDL.Null, Scheduled: IDL.Null, APYMigration: IDL.Null,
+          LiquidityProvision: IDL.Null, VolatilityTrigger: IDL.Null,
+        }),
+        triggerPrice: IDL.Nat64,
+        sizePct: IDL.Nat,
+        swapAmountLamports: IDL.Opt(IDL.Nat64),
+        swapAmountWei: IDL.Opt(IDL.Nat),
+        chainType: IDL.Variant({ Solana: IDL.Null, Evm: IDL.Null }),
+        status: IDL.Variant({
+          Draft: IDL.Null, Active: IDL.Null, Paused: IDL.Null,
+          Executing: IDL.Null, Executed: IDL.Null, Cancelled: IDL.Null,
+          Failed: IDL.Null, Ready: IDL.Null, Confirmed: IDL.Null,
+        }),
+        createdAt: IDL.Int,
+        dcaConfig: IDL.Opt(IDL.Record({
+          amountPerBuy: IDL.Nat, executedBuys: IDL.Nat, intervalSeconds: IDL.Nat,
+          nextExecutionTime: IDL.Int, tokenIn: IDL.Text, tokenOut: IDL.Text, totalBuys: IDL.Nat,
+        })),
+        lpConfig: IDL.Opt(IDL.Record({
+          cooldownHours: IDL.Nat, exitOnHighVolatility: IDL.Bool, maxPositionSizePct: IDL.Float64,
+          maxVolatility: IDL.Float64, minApy: IDL.Float64, minTvlUSD: IDL.Float64,
+          poolAddress: IDL.Text, rebalanceThreshold: IDL.Float64,
+        })),
+        scheduledConfig: IDL.Opt(IDL.Record({
+          action: IDL.Variant({
+            AddLP: IDL.Record({ amountUSD: IDL.Nat, poolAddress: IDL.Text }),
+            RemoveLP: IDL.Record({ percentage: IDL.Nat, poolAddress: IDL.Text }),
+            Send: IDL.Record({ amount: IDL.Nat, recipient: IDL.Text, token: IDL.Text }),
+            Swap: IDL.Record({ amountIn: IDL.Nat, tokenIn: IDL.Text, tokenOut: IDL.Text }),
+          }),
+          cronPattern: IDL.Text, executedCount: IDL.Nat,
+          nextExecutionTime: IDL.Int, repeatCount: IDL.Nat,
+        })),
+        apyMigrationConfig: IDL.Opt(IDL.Record({
+          cooldownHours: IDL.Nat, currentPoolAddress: IDL.Text, lastMigrated: IDL.Int,
+          maxMigrationCostPct: IDL.Float64, minApyDelta: IDL.Float64, targetPools: IDL.Vec(IDL.Text),
+        })),
+        volatilityConfig: IDL.Opt(IDL.Record({
+          action: IDL.Variant({
+            Alert: IDL.Null,
+            Buy: IDL.Record({ amountUSD: IDL.Nat }),
+            ExitLP: IDL.Record({ poolAddress: IDL.Text }),
+            Sell: IDL.Record({ percentage: IDL.Nat }),
+          }),
+          cooldownMinutes: IDL.Nat,
+          direction: IDL.Variant({ Above: IDL.Null, Below: IDL.Null }),
+          lastTriggered: IDL.Int, tokenSymbol: IDL.Text, triggerStdDev: IDL.Float64,
+        })),
+      })],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })], []
+    ),
+    getMyStrategyRules: IDL.Func(
+      [],
+      [IDL.Vec(IDL.Record({
+        id: IDL.Nat,
+        positionId: IDL.Nat,
+        ruleType: IDL.Variant({
+          TakeProfit: IDL.Null, StopLoss: IDL.Null, DCA: IDL.Null,
+          Rebalance: IDL.Null, Scheduled: IDL.Null, APYMigration: IDL.Null,
+          LiquidityProvision: IDL.Null, VolatilityTrigger: IDL.Null,
+        }),
+        triggerPrice: IDL.Nat64,
+        sizePct: IDL.Nat,
+        swapAmountLamports: IDL.Opt(IDL.Nat64),
+        swapAmountWei: IDL.Opt(IDL.Nat),
+        chainType: IDL.Variant({ Solana: IDL.Null, Evm: IDL.Null }),
+        status: IDL.Variant({
+          Draft: IDL.Null, Active: IDL.Null, Paused: IDL.Null,
+          Executing: IDL.Null, Executed: IDL.Null, Cancelled: IDL.Null,
+          Failed: IDL.Null, Ready: IDL.Null, Confirmed: IDL.Null,
+        }),
+        createdAt: IDL.Int,
+        dcaConfig: IDL.Opt(IDL.Record({
+          amountPerBuy: IDL.Nat, executedBuys: IDL.Nat, intervalSeconds: IDL.Nat,
+          nextExecutionTime: IDL.Int, tokenIn: IDL.Text, tokenOut: IDL.Text, totalBuys: IDL.Nat,
+        })),
+        lpConfig: IDL.Opt(IDL.Record({
+          cooldownHours: IDL.Nat, exitOnHighVolatility: IDL.Bool, maxPositionSizePct: IDL.Float64,
+          maxVolatility: IDL.Float64, minApy: IDL.Float64, minTvlUSD: IDL.Float64,
+          poolAddress: IDL.Text, rebalanceThreshold: IDL.Float64,
+        })),
+        scheduledConfig: IDL.Opt(IDL.Record({
+          action: IDL.Variant({
+            AddLP: IDL.Record({ amountUSD: IDL.Nat, poolAddress: IDL.Text }),
+            RemoveLP: IDL.Record({ percentage: IDL.Nat, poolAddress: IDL.Text }),
+            Send: IDL.Record({ amount: IDL.Nat, recipient: IDL.Text, token: IDL.Text }),
+            Swap: IDL.Record({ amountIn: IDL.Nat, tokenIn: IDL.Text, tokenOut: IDL.Text }),
+          }),
+          cronPattern: IDL.Text, executedCount: IDL.Nat,
+          nextExecutionTime: IDL.Int, repeatCount: IDL.Nat,
+        })),
+        apyMigrationConfig: IDL.Opt(IDL.Record({
+          cooldownHours: IDL.Nat, currentPoolAddress: IDL.Text, lastMigrated: IDL.Int,
+          maxMigrationCostPct: IDL.Float64, minApyDelta: IDL.Float64, targetPools: IDL.Vec(IDL.Text),
+        })),
+        volatilityConfig: IDL.Opt(IDL.Record({
+          action: IDL.Variant({
+            Alert: IDL.Null,
+            Buy: IDL.Record({ amountUSD: IDL.Nat }),
+            ExitLP: IDL.Record({ poolAddress: IDL.Text }),
+            Sell: IDL.Record({ percentage: IDL.Nat }),
+          }),
+          cooldownMinutes: IDL.Nat,
+          direction: IDL.Variant({ Above: IDL.Null, Below: IDL.Null }),
+          lastTriggered: IDL.Int, tokenSymbol: IDL.Text, triggerStdDev: IDL.Float64,
+        })),
+      }))], []
+    ),
+    updateStrategyRuleStatus: IDL.Func(
+      [IDL.Nat, IDL.Variant({
+        Draft: IDL.Null, Active: IDL.Null, Paused: IDL.Null,
+        Executing: IDL.Null, Executed: IDL.Null, Cancelled: IDL.Null,
+        Failed: IDL.Null, Ready: IDL.Null, Confirmed: IDL.Null,
+      })],
+      [IDL.Variant({ ok: IDL.Null, err: IDL.Text })], []
+    ),
+    deleteStrategyRule: IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ ok: IDL.Null, err: IDL.Text })], []
+    ),
+    getStrategyLogs: IDL.Func(
+      [],
+      [IDL.Vec(IDL.Record({
+        error: IDL.Opt(IDL.Text),
+        intent_hash: IDL.Text,
+        rule_id: IDL.Text,
+        stage: IDL.Variant({
+          ACTIVATED: IDL.Null, ADDRESS_GENERATED: IDL.Null, BROADCASTING: IDL.Null,
+          BUILT_TX: IDL.Null, COMPLETED: IDL.Null, ESTIMATING_FEE: IDL.Null,
+          FAILED: IDL.Null, FETCHING_UTXOS: IDL.Null, INITIATED: IDL.Null,
+          PENDING: IDL.Null, QUOTE_FETCHED: IDL.Null, RECEIVED_DEPOSIT: IDL.Null,
+          SENT: IDL.Null, SIGNING: IDL.Null, TRIGGERED: IDL.Null, VALIDATED: IDL.Null,
+        }),
+        ts: IDL.Int,
+        tx_id: IDL.Opt(IDL.Text),
+      }))], ["query"]
     ),
 
     // === UTILITY ===
@@ -726,70 +1005,41 @@ export async function createAnonActor(): Promise<ActorSubclass<any>> {
 }
 
 // ============================================================
-// HELPER: Relay client for Client Mode (cheaper)
+// HELPER: Broadcast signed transactions
 // ============================================================
-// Calls the VPS relay API instead of canister HTTP outcalls.
-// Pricing: send $0.05, swap $0.075, bridge $0.10
-// (vs Agent Mode: $0.10, $0.15, $0.20)
+// After calling sign-only endpoints, use these to broadcast
+// the signed transaction to the target chain via your own RPCs.
 
-export interface RelayResponse {
-  success: boolean;
-  txHash?: string;
-  error?: string;
-  data?: Record<string, any>;
-}
-
-export async function relayRequest(
-  chain: string,
-  action: string,
-  params: Record<string, any>,
-): Promise<RelayResponse> {
-  if (!DEVELOPER_KEY) {
-    throw new Error("DEVELOPER_KEY not set — register via registerDeveloperCanister first");
-  }
-
-  const res = await fetch(`${RELAY_URL}/api/${chain}/${action}`, {
+export async function broadcastSolana(
+  signedTxBase64: string,
+  rpcUrl: string = "https://api.mainnet-beta.solana.com",
+): Promise<string> {
+  const res = await fetch(rpcUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Developer-Key": DEVELOPER_KEY,
-    },
-    body: JSON.stringify(params),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: 1, method: "sendTransaction",
+      params: [signedTxBase64, { encoding: "base64", skipPreflight: false }],
+    }),
   });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Relay error ${res.status}: ${text}`);
-  }
-
-  return res.json();
+  const json = await res.json();
+  if (json.error) throw new Error(`Solana RPC error: ${json.error.message}`);
+  return json.result; // tx signature
 }
 
-// Convenience wrappers for common relay operations
-export const relay = {
-  // Send tokens via relay ($0.05 per call)
-  sendSol: (to: string, lamports: number) =>
-    relayRequest("solana", "transfer", { to, lamports }),
-  sendEvm: (to: string, value: string, chainId: number) =>
-    relayRequest("evm", "transfer", { to, value, chainId }),
-  sendNear: (to: string, amountYocto: string) =>
-    relayRequest("near", "transfer", { to, amountYocto }),
-  sendAptos: (to: string, amount: number) =>
-    relayRequest("aptos", "transfer", { to, amount }),
-  sendTon: (to: string, amountNanoton: number) =>
-    relayRequest("ton", "transfer", { to, amountNanoton }),
-  sendSui: (to: string, amount: number) =>
-    relayRequest("sui", "transfer", { to, amount }),
-  sendCardano: (to: string, amountLovelace: number) =>
-    relayRequest("cardano", "transfer", { to, amountLovelace }),
-  sendXrp: (to: string, amountXrp: string) =>
-    relayRequest("xrp", "transfer", { to, amountXrp }),
-  sendTrx: (to: string, amountSun: number) =>
-    relayRequest("tron", "transfer", { to, amountSun }),
-
-  // Swap via relay ($0.075 per call)
-  swapSolRaydium: (inputMint: string, outputMint: string, amount: number, slippage: number) =>
-    relayRequest("solana", "swap", { inputMint, outputMint, amount, slippage }),
-  swapEvm: (tokenIn: string, tokenOut: string, amountIn: string, chainId: number) =>
-    relayRequest("evm", "swap", { tokenIn, tokenOut, amountIn, chainId }),
-};
+export async function broadcastEvm(
+  signedTxHex: string,
+  rpcUrl: string,
+): Promise<string> {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: 1, method: "eth_sendRawTransaction",
+      params: [signedTxHex.startsWith("0x") ? signedTxHex : `0x${signedTxHex}`],
+    }),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(`EVM RPC error: ${json.error.message}`);
+  return json.result; // tx hash
+}

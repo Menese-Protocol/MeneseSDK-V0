@@ -12,15 +12,13 @@
  *   - wrapStEth(amountStEth, rpcEndpoint, quoteId?)             → Wrap stETH → wstETH
  *   - unwrapWstEth(amountWstEth, rpcEndpoint, quoteId?)         → Unwrap wstETH → stETH
  *
- * Cost: $0.10 per operation (Agent Mode — these use HTTP outcalls)
+ * Cost: 1 action per operation
  *
  * NOTE: You must provide your own Ethereum RPC endpoint.
  * Free public RPCs (Alchemy, Infura, Ankr) work fine.
- *
- * Tested: Feb 12, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 const ETH_RPC = "https://eth.llamarpc.com"; // Replace with your own RPC
 
@@ -30,19 +28,17 @@ const ETH_RPC = "https://eth.llamarpc.com"; // Replace with your own RPC
 
 // ── Supply ETH to Aave (earn yield) ──────────────────────────
 // Deposits ETH into Aave V3 lending pool. You receive aWETH (interest-bearing).
-// Returns: { ok: SupplyEthResult, err: text }
-//   SupplyEthResult = { txHash, aTokenAddress, suppliedAmount, senderAddress, note }
+// Returns: { ok: { ethSupplied, nonce, note, senderAddress, txHash }, err: text }
 async function supplyEthToAave(amountEth: number) {
   const menese = await createMeneseActor();
   const wei = BigInt(Math.round(amountEth * 1e18));
 
   console.log(`Supplying ${amountEth} ETH to Aave V3...`);
-  const result = await menese.aaveSupplyEth(wei, ETH_RPC, []) as any;
+  const result = await menese.aaveSupplyEth(wei, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Supply TX:", result.ok.txHash);
-    console.log("aWETH address:", result.ok.aTokenAddress);
-    console.log("Supplied:", result.ok.suppliedAmount, "wei");
+    console.log("Supplied:", result.ok.ethSupplied.toString(), "wei");
     console.log("You now earn interest on this deposit.");
   } else {
     console.error("Supply failed:", result.err);
@@ -52,18 +48,17 @@ async function supplyEthToAave(amountEth: number) {
 
 // ── Withdraw ETH from Aave ──────────────────────────────────
 // Burns your aWETH and returns ETH to your wallet.
-// Returns: { ok: WithdrawEthResult, err: text }
-//   WithdrawEthResult = { txHash, withdrawnAmount, senderAddress, note }
+// Returns: { ok: { approvalTxHash?, ethWithdrawn, nonce, note, senderAddress, txHash }, err: text }
 async function withdrawEthFromAave(amountEth: number) {
   const menese = await createMeneseActor();
   const wei = BigInt(Math.round(amountEth * 1e18));
 
   console.log(`Withdrawing ${amountEth} ETH from Aave V3...`);
-  const result = await menese.aaveWithdrawEth(wei, ETH_RPC, []) as any;
+  const result = await menese.aaveWithdrawEth(wei, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Withdraw TX:", result.ok.txHash);
-    console.log("Withdrawn:", result.ok.withdrawnAmount, "wei");
+    console.log("Withdrawn:", result.ok.ethWithdrawn.toString(), "wei");
   } else {
     console.error("Withdraw failed:", result.err);
   }
@@ -73,7 +68,7 @@ async function withdrawEthFromAave(amountEth: number) {
 // ── Supply ERC20 token to Aave ──────────────────────────────
 // Supply any supported ERC20 token (USDC, USDT, DAI, WBTC, etc.)
 // The canister handles the ERC20 approve + supply in one call.
-// Returns: { ok: SupplyTokenResult, err: text }
+// Returns: { ok: { amountSupplied, approvalTxHash?, nonce, note, senderAddress, tokenAddress, txHash }, err: text }
 async function supplyTokenToAave(
   tokenAddress: string,  // ERC20 contract address
   amount: bigint,        // Amount in token's smallest unit
@@ -81,10 +76,11 @@ async function supplyTokenToAave(
   const menese = await createMeneseActor();
 
   console.log(`Supplying token ${tokenAddress} to Aave V3...`);
-  const result = await menese.aaveSupplyToken(tokenAddress, amount, ETH_RPC, []) as any;
+  const result = await menese.aaveSupplyToken(tokenAddress, amount, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Supply TX:", result.ok.txHash);
+    console.log("Amount supplied:", result.ok.amountSupplied.toString());
   } else {
     console.error("Supply failed:", result.err);
   }
@@ -92,6 +88,7 @@ async function supplyTokenToAave(
 }
 
 // ── Withdraw ERC20 token from Aave ──────────────────────────
+// Returns: { ok: { amountWithdrawn, nonce, note, senderAddress, tokenAddress, txHash }, err: text }
 async function withdrawTokenFromAave(
   tokenAddress: string,
   amount: bigint,
@@ -99,10 +96,11 @@ async function withdrawTokenFromAave(
   const menese = await createMeneseActor();
 
   console.log(`Withdrawing token ${tokenAddress} from Aave V3...`);
-  const result = await menese.aaveWithdrawToken(tokenAddress, amount, ETH_RPC, []) as any;
+  const result = await menese.aaveWithdrawToken(tokenAddress, amount, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Withdraw TX:", result.ok.txHash);
+    console.log("Amount withdrawn:", result.ok.amountWithdrawn.toString());
   } else {
     console.error("Withdraw failed:", result.err);
   }
@@ -116,16 +114,17 @@ async function withdrawTokenFromAave(
 // ── Stake ETH → stETH ───────────────────────────────────────
 // Stake ETH with Lido to earn staking rewards (~3-4% APY).
 // stETH balance rebases daily (increases automatically).
-// Returns: { ok: StakeResult, err: text }
+// Returns: { ok: { ethStaked, nonce, note, senderAddress, txHash }, err: text }
 async function stakeEth(amountEth: number) {
   const menese = await createMeneseActor();
   const wei = BigInt(Math.round(amountEth * 1e18));
 
   console.log(`Staking ${amountEth} ETH with Lido...`);
-  const result = await menese.stakeEthForStEth(wei, ETH_RPC, []) as any;
+  const result = await menese.stakeEthForStEth(wei, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Stake TX:", result.ok.txHash);
+    console.log("ETH staked:", result.ok.ethStaked.toString(), "wei");
     console.log("You now hold stETH that earns staking rewards.");
   } else {
     console.error("Staking failed:", result.err);
@@ -136,15 +135,16 @@ async function stakeEth(amountEth: number) {
 // ── Wrap stETH → wstETH ─────────────────────────────────────
 // wstETH doesn't rebase — the value per token increases instead.
 // Better for DeFi composability (Aave accepts wstETH as collateral).
-// Returns: { ok: WrapResult, err: text }
-async function wrapStEth(amountStEth: bigint) {
+// Returns: { ok: { approvalTxHash?, nonce, note, senderAddress, stEthWrapped, txHash }, err: text }
+async function wrapStEthExample(amountStEth: bigint) {
   const menese = await createMeneseActor();
 
   console.log("Wrapping stETH → wstETH...");
-  const result = await menese.wrapStEth(amountStEth, ETH_RPC, []) as any;
+  const result = await menese.wrapStEth(amountStEth, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Wrap TX:", result.ok.txHash);
+    console.log("stETH wrapped:", result.ok.stEthWrapped.toString(), "wei");
   } else {
     console.error("Wrap failed:", result.err);
   }
@@ -152,15 +152,16 @@ async function wrapStEth(amountStEth: bigint) {
 }
 
 // ── Unwrap wstETH → stETH ───────────────────────────────────
-// Returns: { ok: UnwrapResult, err: text }
-async function unwrapWstEth(amountWstEth: bigint) {
+// Returns: { ok: { nonce, note, senderAddress, txHash, wstEthUnwrapped }, err: text }
+async function unwrapWstEthExample(amountWstEth: bigint) {
   const menese = await createMeneseActor();
 
   console.log("Unwrapping wstETH → stETH...");
-  const result = await menese.unwrapWstEth(amountWstEth, ETH_RPC, []) as any;
+  const result = await menese.unwrapWstEth(amountWstEth, ETH_RPC, []);
 
   if ("ok" in result) {
     console.log("Unwrap TX:", result.ok.txHash);
+    console.log("wstETH unwrapped:", result.ok.wstEthUnwrapped.toString(), "wei");
   } else {
     console.error("Unwrap failed:", result.err);
   }
@@ -194,11 +195,27 @@ async function main() {
   await stakeEth(0.5);
 
   // Wrap stETH → wstETH (for DeFi composability)
-  // Use the stETH amount in wei
-  await wrapStEth(BigInt("500000000000000000")); // 0.5 stETH
+  await wrapStEthExample(BigInt("500000000000000000")); // 0.5 stETH
 
   // Unwrap back: wstETH → stETH
-  await unwrapWstEth(BigInt("450000000000000000")); // ~0.45 wstETH
+  await unwrapWstEthExample(BigInt("450000000000000000")); // ~0.45 wstETH
+
+  // ── Check DeFi Position Balances ───────────────────────────
+  const actor = await createMeneseActor();
+  const evmInfo = await actor.getMyEvmAddress();
+  const userAddr = evmInfo.evmAddress;
+
+  // Aave: check aWETH balance (your supplied ETH earning yield)
+  const aWethBal = await actor.getAWethBalance(userAddr, ETH_RPC);
+  if ("ok" in aWethBal) console.log(`aWETH balance: ${aWethBal.ok} wei`);
+
+  // Lido: check stETH balance
+  const stEthBal = await actor.getStEthBalance(userAddr, ETH_RPC);
+  if ("ok" in stEthBal) console.log(`stETH balance: ${stEthBal.ok} wei`);
+
+  // Lido: check wstETH balance
+  const wstEthBal = await actor.getWstEthBalance(userAddr, ETH_RPC);
+  if ("ok" in wstEthBal) console.log(`wstETH balance: ${wstEthBal.ok} wei`);
 }
 
 main().catch(console.error);

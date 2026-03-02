@@ -9,7 +9,7 @@
  *   - Cardano: Minswap
  *   - XRP:     XRP Ledger built-in DEX
  *
- * Cost: $0.075 per swap operation
+ * Cost: 1 action per swap operation
  *
  * IMPORTANT — Chain-specific prerequisites:
  *   - Solana: You need ATAs (Associated Token Accounts) for SPL tokens.
@@ -21,7 +21,7 @@
  * Tested: Feb 11, 2026 on mainnet canister urs2a-ziaaa-aaaad-aembq-cai
  */
 
-import { createMeneseActor } from "./menese-config";
+import { createMeneseActor } from "./sdk-setup";
 
 // ══════════════════════════════════════════════════════════════
 // 1. RAYDIUM (Solana)
@@ -103,7 +103,7 @@ async function swapOnUniswap(
   if ("ok" in result) {
     console.log("Swap TX:", result.ok.expectedTxHash);
     console.log("Nonce:", result.ok.nonce.toString());
-    console.log("Path:", result.ok.pathSymbols.join(" → "));
+    console.log("Path:", result.ok.path.join(" → "));
   } else {
     console.error("Swap failed:", result.err);
   }
@@ -428,6 +428,23 @@ async function main() {
   // NOTE: Requires trustline for USD token first!
   // await swapOnXrpDex("USD", "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B", "5",
   //   "XRP", "", "50", "[]", 100);
+
+  // ── Multi-Hop EVM Swap ───────────────────────────────────
+  // When no direct pair exists, route through intermediate tokens
+  // e.g., SHIB → WETH → USDC (auto-finds best path)
+  const multiHopResult = await menese.swapTokensMultiHop(
+    "SHIB",              // from token
+    "USDC",              // to token
+    BigInt(1000000000),  // amount in
+    100,                 // 1% slippage
+    false,               // useFeeOnTransfer
+    1,                   // chainId (Ethereum mainnet)
+    "https://eth-mainnet.rpc.url",
+  );
+  if ("ok" in multiHopResult) {
+    console.log(`Multi-hop swap: ${multiHopResult.ok.path.join(" → ")}`);
+    console.log(`  Direct: ${multiHopResult.ok.isDirect}, Nonce: ${multiHopResult.ok.nonce}`);
+  }
 }
 
 main().catch(console.error);

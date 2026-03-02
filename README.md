@@ -1,17 +1,17 @@
 # MeneseSDK Examples
 
-Multi-chain payment gateway on the Internet Computer. Send, swap, and bridge
+Multi-chain payment gateway on the Internet Computer. Send, swap, stake, and manage liquidity
 across 19 blockchains from a single canister.
 
 ## What You Can Build
 
-MeneseSDK isn't just a payment gateway — it's a **programmable multi-chain execution layer**.
-Your canister or frontend can automate any on-chain action across 19 blockchains.
+MeneseSDK is a **programmable multi-chain execution layer**. Your canister or frontend can
+automate any on-chain action across 19 blockchains.
 
 ### Automated Trading & DCA
 Build bots that execute trades based on price conditions, all running autonomously on ICP timers:
 
-- **Dollar-Cost Averaging** — Buy SOL/ETH/any token at fixed intervals (see `02-AutomationBot.mo`)
+- **Dollar-Cost Averaging** — Buy SOL/ETH/any token at fixed intervals (see `backend/02-AutomationBot.mo`)
 - **Take Profit / Stop Loss** — Set price thresholds, MeneseSDK executes the swap when triggered
 - **Volatility Triggers** — React to market volatility automatically
 - **Scheduled Execution** — Time-based actions (weekly buys, monthly rebalancing)
@@ -46,19 +46,19 @@ Automate LP positions on Ethereum (Uniswap V3) and ICP DEXes (ICPSwap, KongSwap)
 - **ICP DEX Liquidity** — `addICPLiquidity`, `removeICPLiquidity` on ICPSwap and KongSwap
 
 ```typescript
-// Client mode: Add ETH + USDC liquidity on Uniswap V3
+// Add ETH + USDC liquidity on Uniswap V3
 const result = await actor.addLiquidityETH(
-  "USDC",           // token to pair with ETH
-  1000000000n,      // 1000 USDC desired
-  500000000000000000n, // 0.5 ETH desired
-  100,               // 1% slippage
+  "USDC",                      // token to pair with ETH
+  1000000000n,                 // 1000 USDC desired
+  500000000000000000n,         // 0.5 ETH desired
+  100,                         // 1% slippage
   "https://eth-mainnet.rpc.url",
-  quoteId
+  []                           // optional quoteId
 );
 ```
 
 ### DeFi Protocol Integration
-Access Aave and Lido directly from your canister:
+Access Aave and Lido directly from your canister or frontend:
 
 - **Aave Lending** — `aaveSupplyEth`, `aaveSupplyToken` to earn yield
 - **Aave Withdrawals** — `aaveWithdrawEth`, `aaveWithdrawToken` to reclaim funds
@@ -68,12 +68,15 @@ Access Aave and Lido directly from your canister:
 Call **any** EVM smart contract — read state or execute transactions:
 
 ```motoko
-// Write: execute a function on any Ethereum contract
+// Write: execute a function on any Ethereum contract (1 action)
 await menese.callEvmContractWrite(
   "0xContractAddress",
   "transfer(address,uint256)",
   ["0xRecipient", "1000000"],
-  "https://eth-mainnet.rpc.url"
+  "https://eth-mainnet.rpc.url",
+  1,  // chainId
+  0,  // value (ETH to send)
+  null
 );
 
 // Read: query any contract state (FREE)
@@ -85,57 +88,56 @@ let balance = await menese.callEvmContractRead(
 );
 ```
 
-### Build Your Own Automation Layer
-You don't have to use the built-in strategy engine. Build your own:
-
-1. **ICP Canister with Timers** — Deploy your own canister that calls MeneseSDK on a schedule
-2. **Hosted Price Listener** — Run a server that monitors prices via WebSockets and triggers MeneseSDK actions via client mode
-3. **Webhook-Driven** — Integrate with price alert services, trigger swaps/sends when conditions are met
-4. **Custom Logic** — Combine balance checks, price feeds, and multi-chain actions into any workflow
-
-**Need something specific?** Contact Menese Protocol for custom automation challenges — multi-chain arbitrage,
-cross-chain yield optimization, conditional bridging, or any complex DeFi workflow you can imagine.
-
 ---
 
-## Two Modes
+## Two Integration Modes
 
-| | Client Mode | Agent Mode |
+| | Full Execution | Sign-Only |
 |---|---|---|
-| **How** | Frontend → Relay → Canister signs | Your canister → MeneseSDK (HTTP outcalls) |
-| **Send** | $0.05 | $0.10 |
-| **Swap** | $0.075 | $0.15 |
-| **Bridge** | $0.10 | $0.20 |
-| **Best for** | Browser apps, wallets, checkouts | Bots, automation, canister-to-canister |
-| **Requires** | Developer key + relay | Credits deposited in gateway |
+| **How** | Call canister → it handles everything (RPC + sign + broadcast) | You fetch chain data → canister signs → you broadcast |
+| **Best for** | Bots, automation, AI agents, quick prototyping | Production frontends, custom retry logic, cost savings |
+| **RPC** | MeneseSDK handles it | You provide your own |
+| **Canister cycles** | Higher (HTTP outcalls) | Lower (no outcalls) |
+
+Both modes consume 1 action per operation from your subscription.
 
 ## Directory Structure
 
 ```
-examples/
-├── client-mode/              # Relay-based (browser/app present, cheaper)
-│   ├── menese-config.ts      # Shared config + relay helpers
-│   ├── 01-quick-start.ts     # Get addresses on 19 chains (FREE)
-│   ├── 02-send-tokens.ts     # Send on all chains ($0.05)
-│   ├── 03-swap.ts            # DEX swaps on 6 chains ($0.075)
-│   ├── 04-bridge-eth-to-sol.ts  # Cross-chain bridges ($0.10)
-│   ├── 05-merchant-checkout.ts  # Payment flow
-│   ├── 06-portfolio-tracker.ts  # Balance dashboard (FREE)
-│   ├── 07-defi-lending.ts    # Aave V3 + Lido staking ($0.10)
-│   ├── 08-defi-liquidity.ts  # Uniswap V3 + ICP DEX LP ($0.10)
-│   ├── 09-custom-contracts.ts  # Call any EVM contract ($0.10 write / FREE read)
-│   ├── DeveloperDashboard.tsx  # Developer account management
+├── frontend/                   # TypeScript — build web apps
+│   ├── sdk-setup.ts            # Full Candid IDL + actor helpers + broadcast helpers
+│   ├── 01-quick-start.ts       # Get addresses on 19 chains (FREE)
+│   ├── 02-send-tokens.ts       # Send on all chains
+│   ├── 03-swap.ts              # DEX swaps on 6 chains
+│   ├── 04-merchant-checkout.ts # Payment flow
+│   ├── 05-portfolio-tracker.ts # Balance dashboard (FREE)
+│   ├── 06-defi-lending.ts      # Aave V3 + Lido staking
+│   ├── 07-defi-liquidity.ts    # Uniswap V3 + ICP DEX LP
+│   ├── 08-custom-contracts.ts  # Call any EVM contract
+│   ├── 09-icrc2-tokens.ts      # ICRC-2 approve/transfer/allowance
+│   ├── 10-strategy-engine.ts   # Automation rules from TypeScript
+│   ├── 11-sign-and-broadcast.ts # Sign-only mode: full flow (SOL, EVM, XRP, SUI)
+│   ├── DeveloperDashboard.tsx  # Developer account management (React)
 │   └── README.md
-├── agent-mode/               # Canister HTTP outcalls (autonomous, more expensive)
-│   ├── MeneseInterface.mo    # Full actor type (all endpoints incl. DeFi)
+├── backend/                    # Motoko — build autonomous canisters
+│   ├── MeneseInterface.mo      # Full actor type (all endpoints)
 │   ├── 01-BasicIntegration.mo  # Canister basics
-│   ├── 02-AutomationBot.mo   # Timer-based DCA bot
+│   ├── 02-AutomationBot.mo     # Timer-based DCA bot
 │   ├── 03-MerchantPayments.mo  # Invoice + payment system
-│   ├── 04-DeFiBot.mo         # Autonomous DeFi yield bot (Aave + Lido + LP)
-│   ├── WalletBot.mo          # Multi-chain wallet bot
-│   ├── wallet_commands.py    # Python CLI wrapper
+│   ├── 04-DeFiBot.mo           # Autonomous DeFi yield bot
+│   ├── 05-StrategyBot.mo       # Strategy engine (TP/SL/DCA/Rebalance)
+│   ├── WalletBot.mo            # Multi-chain wallet bot
+│   ├── wallet-commands.py      # Python CLI wrapper
 │   └── README.md
-└── README.md                 # This file
+├── ai-agents/                 # Build AI agents that manage crypto
+│   ├── SKILL.md                # Agent skill file (400+ functions, feed to your AI)
+│   ├── WalletBot.mo            # Example wallet canister (Approach A)
+│   ├── wallet_commands.py      # Python CLI wrapper (Approach B)
+│   ├── README.md               # Setup guide + two integration approaches
+│   └── references/             # API surface + automation patterns
+├── scripts/                    # Internal validation tools
+├── AI_CODING_GUIDE.md          # AI-assisted development tips
+└── README.md                   # This file
 ```
 
 ## Supported Chains (19)
@@ -155,34 +157,28 @@ ICP, XRP, SUI, TON, Cardano, Tron, Aptos, NEAR, CloakCoin, THORChain
 
 | Tier | Price | Actions/Month | Best for |
 |------|-------|---------------|----------|
-| **Free** | $0 | 5 (lifetime) | Testing & prototyping |
-| **Developer** | $35/mo | 1,000 | Side projects, small apps |
-| **Pro** | $99/mo | 5,000 | Production apps |
-| **Enterprise** | $249/mo | Unlimited | High-volume, multi-app |
+| **Basic** | $20/mo | 100 | Agents & personal wallets |
+| **Developer** | $45.50/mo | 1,000 | Side projects, small apps |
+| **Pro** | $128.70/mo | 5,000 | Production apps |
+| **Enterprise** | $323.70/mo | Unlimited | High-volume, multi-app |
 
-Or use **pay-per-use credits** — deposit ICP and pay per operation at the rates above.
+All operations require an active subscription. No free tier for actions.
 
 ```bash
-# Purchase a subscription
-dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant { Developer }, "ICP")'
+# Purchase a subscription (ICP payment)
+dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant { Developer }, "ICP")' --network ic
 
-# Or deposit credits (pay-per-use)
-dfx canister call urs2a-ziaaa-aaaad-aembq-cai depositGatewayCredits '("ICP", 100000000)'
+# Check your account
+dfx canister call urs2a-ziaaa-aaaad-aembq-cai getMyGatewayAccount '()' --network ic
 ```
 
-## FREE Operations
+## FREE Operations (no subscription needed)
 
-- All address derivation (19 chains)
-- All balance queries
-- Swap quotes (Raydium, ICP DEX, Cetus, Minswap)
-- Strategy creation
-- Developer registration
-
-## AI-Assisted Development
-
-See **[VIBE_CODING_GUIDE.md](./VIBE_CODING_GUIDE.md)** for how to use Caffeine or other
-AI coding assistants with MeneseSDK. Includes context file recommendations,
-prompt templates, and developer package setup.
+- All address derivation (19 chains): `getMySolanaAddress`, `getMyEvmAddress`, `getAllAddresses`, etc.
+- All balance queries: `getMySolanaBalance`, `getAllBalances`, etc.
+- Swap quotes: `getRaydiumQuote`, `getICPDexQuote`, `getSuiSwapQuote`, etc.
+- Developer registration: `registerDeveloperCanister`
+- Gateway queries: `getMyGatewayAccount`, `getMyDeveloperAccount`
 
 ## Developer Packages
 
@@ -198,7 +194,7 @@ npm install @dfinity/agent @dfinity/candid @dfinity/principal @dfinity/auth-clie
 base = "0.13.2"
 ```
 
-**Type declarations** (auto-generated):
-```bash
-dfx generate  # Creates src/declarations/backend/ with .did, .did.d.ts, .did.js
-```
+## AI-Assisted Development
+
+See **[AI_CODING_GUIDE.md](./AI_CODING_GUIDE.md)** for how to use AI coding assistants
+with MeneseSDK. Includes context file recommendations and prompt templates.
