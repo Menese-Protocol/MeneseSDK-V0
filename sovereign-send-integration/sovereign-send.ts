@@ -156,15 +156,17 @@ const sovereignSendIDL = ({ IDL }: any) => {
       [],
     ),
 
-    // ── Derivation Shield (cycle drain protection) ──
+    // ── Derivation Shield (caller-pays economics) ──
     getShieldStatus: IDL.Func([], [IDL.Record({
       cycleBalance: IDL.Nat,
       minReserve: IDL.Nat,
       circuitBreakerActive: IDL.Bool,
       cachedUsers: IDL.Nat,
-      recentDerivations: IDL.Nat,
-      maxPerWindow: IDL.Nat,
       allowlistSize: IDL.Nat,
+      vouchedUsers: IDL.Nat,
+      derivationFee: IDL.Nat,
+      totalCyclesCollected: IDL.Nat,
+      totalPaidDerivations: IDL.Nat,
     })], ["query"]),
 
     addAllowedCaller: IDL.Func(
@@ -176,6 +178,22 @@ const sovereignSendIDL = ({ IDL }: any) => {
     removeAllowedCaller: IDL.Func(
       [IDL.Principal],
       [IDL.Variant({ ok: IDL.Null, err: IDL.Text })],
+      [],
+    ),
+
+    // ── Partner User Registration ──
+    // Allowlisted partner canisters can register their users' principals.
+    // Registered users call sovereign_send directly from their frontend
+    // — no inter-canister hop, faster execution.
+    registerPartnerUsers: IDL.Func(
+      [IDL.Vec(IDL.Principal)],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
+      [],
+    ),
+
+    removePartnerUsers: IDL.Func(
+      [IDL.Vec(IDL.Principal)],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
       [],
     ),
   });
@@ -502,9 +520,44 @@ export interface ShieldStatus {
   minReserve: bigint;
   circuitBreakerActive: boolean;
   cachedUsers: bigint;
-  recentDerivations: bigint;
-  maxPerWindow: bigint;
   allowlistSize: bigint;
+  vouchedUsers: bigint;
+  derivationFee: bigint;
+  totalCyclesCollected: bigint;
+  totalPaidDerivations: bigint;
+}
+
+/**
+ * Register user principals for direct frontend access.
+ *
+ * Your backend canister (allowlisted) calls this to vouch for your users.
+ * After registration, those users call sovereign_send directly from
+ * their browser — no inter-canister hop, faster execution.
+ *
+ * @param actor - Sovereign Send actor (must be called from allowlisted canister)
+ * @param userPrincipals - Array of user principal IDs to register
+ * @returns Number of newly registered users
+ *
+ * Limits: max 50,000 vouched users per partner canister.
+ * Partners can only remove users they registered.
+ */
+export async function registerPartnerUsers(
+  actor: any,
+  userPrincipals: Principal[],
+): Promise<number> {
+  const result = await actor.registerPartnerUsers(userPrincipals);
+  if ("err" in result) throw new Error(result.err);
+  return Number(result.ok);
+}
+
+/** Remove previously registered user principals. */
+export async function removePartnerUsers(
+  actor: any,
+  userPrincipals: Principal[],
+): Promise<number> {
+  const result = await actor.removePartnerUsers(userPrincipals);
+  if ("err" in result) throw new Error(result.err);
+  return Number(result.ok);
 }
 
 /** Query the canister's Derivation Shield status — free, no auth needed. */
