@@ -20,6 +20,7 @@
  * │  TARGETS:                                                   │
  * │  • ICP-SOL Swap  — send SOL, receive ICP at oracle rate     │
  * │  • SOL Borrow V3 — send SOL collateral, receive USDC loan   │
+ * │  • mSOL (ckSOL)  — send SOL, receive mSOL (1:1 chain-key)   │
  * └─────────────────────────────────────────────────────────────┘
  *
  * CANISTER:  fxjsq-raaaa-aaaab-agdaa-cai
@@ -68,6 +69,8 @@ import { IDL } from "@dfinity/candid";
 const SOVEREIGN_SEND = "fxjsq-raaaa-aaaab-agdaa-cai";
 const ICP_SOL_SWAP   = "w2vjc-2yaaa-aaaab-ae6zq-cai";
 const SOL_BORROW_V3  = "p7teu-wyaaa-aaaab-afnvq-cai";
+const CKSOL_MSOL     = "crmds-kqaaa-aaaaf-qf5aq-cai";  // mSOL canister (deposit SOL, mint mSOL)
+const MSOL_LEDGER    = "2ykjj-eyaaa-aaaae-af4ma-cai";   // mSOL ICRC-2 ledger (balances, approve, transfer)
 const IC_HOST        = "https://icp-api.io";
 
 /**
@@ -100,6 +103,7 @@ const sovereignSendIDL = ({ IDL }: any) => {
   const TreasuryType = IDL.Variant({
     IcpSolSwap: IDL.Null,
     SolBorrow: IDL.Null,
+    CkSol: IDL.Null,        // mSOL canister (crmds-kqaaa-aaaaf-qf5aq-cai)
   });
 
   return IDL.Service({
@@ -152,6 +156,20 @@ const sovereignSendIDL = ({ IDL }: any) => {
       [IDL.Principal, IDL.Nat64, IDL.Opt(BorrowParams)],
       [IDL.Variant({
         ok: IDL.Record({
+          txSignature: IDL.Text,
+          depositId: IDL.Nat,
+        }),
+        err: IDL.Text,
+      })],
+      [],
+    ),
+
+    // Sign-only deposit: caller provides blockhash, broadcasts TX themselves
+    signDeposit: IDL.Func(
+      [IDL.Principal, IDL.Nat64, IDL.Text, IDL.Opt(BorrowParams)],
+      [IDL.Variant({
+        ok: IDL.Record({
+          signedTxBase64: IDL.Text,
           txSignature: IDL.Text,
           depositId: IDL.Nat,
         }),
@@ -581,4 +599,410 @@ export async function removePartnerUsers(
 /** Query the canister's Derivation Shield status — free, no auth needed. */
 export async function getShieldStatus(actor: any): Promise<ShieldStatus> {
   return actor.getShieldStatus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  mSOL (ckSOL) — Yield-Bearing Staked SOL on ICP
+// ═══════════════════════════════════════════════════════════════
+//
+//  mSOL is a chain-key representation of SOL on the Internet Computer.
+//  Deposit SOL → receive mSOL (1:1 rate). Redeem mSOL → receive SOL back.
+//
+//  Canister:  crmds-kqaaa-aaaaf-qf5aq-cai  (mSOL minting + redemption)
+//  Ledger:    2ykjj-eyaaa-aaaae-af4ma-cai  (ICRC-2 token — balances, transfers, approvals)
+//
+//  ┌─────────────────────────────────────────────────────────────┐
+//  │  DEPOSIT FLOW  (SOL → mSOL):                                │
+//  │                                                             │
+//  │  1. Use Sovereign Send to transfer SOL to the mSOL treasury │
+//  │  2. Call expectCkSolDeposit(txHash, lamports) on mSOL       │
+//  │  3. Canister verifies TX on Solana, mints mSOL to you       │
+//  │                                                             │
+//  │  Fee: 0.1% deposit fee (10 bps) deducted from mint amount   │
+//  │  Min deposit: 0.05 SOL (50,000,000 lamports)                │
+//  │  Verification: ~10-20 seconds (auto-checked by canister)    │
+//  ├─────────────────────────────────────────────────────────────┤
+//  │  REDEEM FLOW  (mSOL → SOL):                                 │
+//  │                                                             │
+//  │  1. icrc2_approve mSOL ledger → mSOL canister as spender    │
+//  │  2. Call requestCkSolRedemption(amount, solDestination)      │
+//  │  3. Canister burns mSOL, signs SOL TX, broadcasts to Solana │
+//  │                                                             │
+//  │  Fee: 0.1% redemption fee (10 bps) deducted from SOL out    │
+//  │  Min redemption: 0.05 SOL after fee                         │
+//  │  SOL arrives: ~30-60 seconds after redemption request        │
+//  └─────────────────────────────────────────────────────────────┘
+
+export { CKSOL_MSOL, MSOL_LEDGER };
+
+// ── mSOL Canister IDL ─────────────────────────────────────────
+
+const msolCanisterIDL = ({ IDL }: any) => {
+  return IDL.Service({
+    expectCkSolDeposit: IDL.Func(
+      [IDL.Text, IDL.Nat64, IDL.Opt(IDL.Principal)],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
+      [],
+    ),
+    requestCkSolRedemption: IDL.Func(
+      [IDL.Nat64, IDL.Text, IDL.Opt(IDL.Text)],
+      [IDL.Variant({
+        ok: IDL.Record({
+          redemptionId: IDL.Nat,
+          signedTxBase64: IDL.Text,
+          signatureBase58: IDL.Text,
+        }),
+        err: IDL.Text,
+      })],
+      [],
+    ),
+    getCksolStats: IDL.Func([], [IDL.Record({
+      stakePct: IDL.Nat,
+      totalYieldEarned: IDL.Nat64,
+      pendingRedemptions: IDL.Nat,
+      stakedIasolLamports: IDL.Nat64,
+      pendingDeposits: IDL.Nat,
+      estimatedApyBps: IDL.Nat,
+      currentEpoch: IDL.Nat,
+      solPerCkSolE9: IDL.Nat64,
+      idleSolLamports: IDL.Nat64,
+      totalRedemptions: IDL.Nat,
+      totalCkSolSupply: IDL.Nat64,
+      totalProtocolFees: IDL.Nat64,
+      totalDeposits: IDL.Nat,
+      totalSolBackingLamports: IDL.Nat64,
+    })], []),
+    getCksolRate: IDL.Func([], [IDL.Record({
+      epoch: IDL.Nat,
+      totalBackingLamports: IDL.Nat64,
+      solPerCkSolE9: IDL.Nat64,
+      totalCkSolSupply: IDL.Nat64,
+      iasolToSolRateE9: IDL.Nat64,
+    })], []),
+    getSolanaAddress: IDL.Func([], [IDL.Record({
+      publicKey: IDL.Vec(IDL.Nat8),
+      address: IDL.Text,
+    })], []),
+  });
+};
+
+// ── ICRC-2 Ledger IDL (for approve + balance) ────────────────
+
+const icrc2LedgerIDL = ({ IDL }: any) => {
+  const Account = IDL.Record({
+    owner: IDL.Principal,
+    subaccount: IDL.Opt(IDL.Vec(IDL.Nat8)),
+  });
+  const ApproveArgs = IDL.Record({
+    from_subaccount: IDL.Opt(IDL.Vec(IDL.Nat8)),
+    spender: Account,
+    amount: IDL.Nat,
+    expected_allowance: IDL.Opt(IDL.Nat),
+    expires_at: IDL.Opt(IDL.Nat64),
+    fee: IDL.Opt(IDL.Nat),
+    memo: IDL.Opt(IDL.Vec(IDL.Nat8)),
+    created_at_time: IDL.Opt(IDL.Nat64),
+  });
+  const ApproveError = IDL.Variant({
+    BadFee: IDL.Record({ expected_fee: IDL.Nat }),
+    InsufficientFunds: IDL.Record({ balance: IDL.Nat }),
+    AllowanceChanged: IDL.Record({ current_allowance: IDL.Nat }),
+    Expired: IDL.Record({ ledger_time: IDL.Nat64 }),
+    TemporarilyUnavailable: IDL.Null,
+    GenericError: IDL.Record({ error_code: IDL.Nat, message: IDL.Text }),
+  });
+  return IDL.Service({
+    icrc1_balance_of: IDL.Func([Account], [IDL.Nat], ["query"]),
+    icrc1_total_supply: IDL.Func([], [IDL.Nat], ["query"]),
+    icrc1_fee: IDL.Func([], [IDL.Nat], ["query"]),
+    icrc2_approve: IDL.Func([ApproveArgs], [IDL.Variant({ Ok: IDL.Nat, Err: ApproveError })], []),
+  });
+};
+
+// ── mSOL Actor Factories ─────────────────────────────────────
+
+/** Create mSOL canister actor (for deposit/redeem). Requires authenticated identity. */
+export function createMsolActor(identity: any) {
+  const agent = new HttpAgent({ host: IC_HOST, identity });
+  return Actor.createActor(msolCanisterIDL, {
+    agent,
+    canisterId: CKSOL_MSOL,
+  });
+}
+
+/** Create mSOL ledger actor (for balance/approve). Requires authenticated identity. */
+export function createMsolLedgerActor(identity: any) {
+  const agent = new HttpAgent({ host: IC_HOST, identity });
+  return Actor.createActor(icrc2LedgerIDL, {
+    agent,
+    canisterId: MSOL_LEDGER,
+  });
+}
+
+// ── mSOL Types ────────────────────────────────────────────────
+
+export interface MsolDepositResult {
+  depositId: bigint;
+}
+
+export interface MsolRedemptionResult {
+  redemptionId: bigint;
+  signedTxBase64: string;
+  signatureBase58: string;
+}
+
+export interface MsolStats {
+  solPerCkSolE9: bigint;
+  totalSolBackingLamports: bigint;
+  totalCkSolSupply: bigint;
+  pendingDeposits: bigint;
+  pendingRedemptions: bigint;
+  totalDeposits: bigint;
+  totalRedemptions: bigint;
+}
+
+// ── mSOL API ─────────────────────────────────────────────────
+
+/**
+ * Get your mSOL balance.
+ *
+ * @param ledgerActor - from createMsolLedgerActor(identity)
+ * @param principalText - your principal as text (identity.getPrincipal().toText())
+ * @returns balance in mSOL lamports (9 decimals, same as SOL)
+ */
+export async function getMsolBalance(
+  ledgerActor: any,
+  principalText: string,
+): Promise<bigint> {
+  return ledgerActor.icrc1_balance_of({
+    owner: Principal.fromText(principalText),
+    subaccount: [],
+  }) as Promise<bigint>;
+}
+
+/**
+ * DEPOSIT SOL → MINT mSOL
+ *
+ * Full flow:
+ *   1. Send SOL to the mSOL treasury via Sovereign Send
+ *   2. Call expectCkSolDeposit with the Solana TX hash
+ *   3. Canister verifies the TX on-chain and mints mSOL to your principal
+ *
+ * The canister auto-verifies every 10 seconds (up to 20 attempts).
+ * mSOL appears in your balance within ~10-30 seconds.
+ *
+ * NOTE: The canister uses the actual on-chain amount for minting,
+ * so network fees (auto-clamped by Sovereign Send) are handled automatically.
+ *
+ * @param sovereignActor - from createSovereignSendActor(identity)
+ * @param msolActor - from createMsolActor(identity)
+ * @param solAmount - amount of SOL to deposit (human-readable, e.g. 0.5)
+ * @returns depositId — track status via myCksolDeposits()
+ *
+ * @example
+ *   const ss = createSovereignSendActor(identity);
+ *   const msol = createMsolActor(identity);
+ *   const { depositId, txSignature } = await depositSolForMsol(ss, msol, 0.1);
+ *   // mSOL minted to your principal within ~30s
+ */
+export async function depositSolForMsol(
+  sovereignActor: any,
+  msolActor: any,
+  solAmount: number,
+): Promise<{ depositId: bigint; txSignature: string }> {
+  const lamports = solToLamports(solAmount);
+
+  // Step 1: Send SOL to mSOL treasury via Sovereign Send (autonomous path)
+  const depositResult = await sovereignActor.depositSol(
+    Principal.fromText(CKSOL_MSOL),
+    lamports,
+    [], // no borrow params
+  );
+  if ("err" in depositResult) throw new Error(depositResult.err);
+  const txSignature = depositResult.ok.txSignature as string;
+
+  // Step 2: Register the deposit with the mSOL canister
+  // Pass the actual lamports — canister verifies on-chain amount (may be less due to network fee)
+  const expectResult = await msolActor.expectCkSolDeposit(
+    txSignature,
+    lamports,
+    [], // onBehalfOf: null (mints to caller)
+  );
+  if ("err" in expectResult) throw new Error(expectResult.err);
+
+  return {
+    depositId: expectResult.ok as bigint,
+    txSignature,
+  };
+}
+
+/**
+ * DEPOSIT SOL → MINT mSOL (Sign-Only Path)
+ *
+ * Same as depositSolForMsol but uses sign-only for the Solana TX.
+ * Cheaper (0 canister cycles for broadcast) but you handle the RPC.
+ *
+ * @example
+ *   const ss = createSovereignSendActor(identity);
+ *   const msol = createMsolActor(identity);
+ *   const { depositId, txSignature } = await signDepositSolForMsol(ss, msol, 0.1);
+ */
+export async function signDepositSolForMsol(
+  sovereignActor: any,
+  msolActor: any,
+  solAmount: number,
+): Promise<{ depositId: bigint; txSignature: string }> {
+  const lamports = solToLamports(solAmount);
+
+  // Step 1: Get mSOL treasury address
+  const treasury = await msolActor.getSolanaAddress();
+  const treasuryAddress = treasury.address as string;
+
+  // Step 2: Sign SOL transfer via Sovereign Send (sign-only)
+  const blockhash = await fetchSolanaBlockhash();
+  const signResult = await sovereignActor.signSend(treasuryAddress, lamports, blockhash);
+  if ("err" in signResult) throw new Error(signResult.err);
+
+  const { signedTxBase64, txSignature } = signResult.ok;
+
+  // Step 3: Broadcast from browser
+  await broadcastSolanaTx(signedTxBase64);
+
+  // Step 4: Register deposit with mSOL canister
+  const expectResult = await msolActor.expectCkSolDeposit(
+    txSignature,
+    lamports,
+    [], // onBehalfOf: null
+  );
+  if ("err" in expectResult) throw new Error(expectResult.err);
+
+  return {
+    depositId: expectResult.ok as bigint,
+    txSignature,
+  };
+}
+
+/**
+ * REDEEM mSOL → RECEIVE SOL
+ *
+ * Full flow:
+ *   1. Approve mSOL canister to spend your mSOL (icrc2_approve on ledger)
+ *   2. Call requestCkSolRedemption with amount + your SOL destination
+ *   3. Canister burns mSOL, signs SOL transfer, broadcasts to Solana
+ *
+ * IMPORTANT: You must call icrc2_approve BEFORE calling this function.
+ * Use approveMsolForRedemption() helper or do it manually.
+ *
+ * @param msolActor - from createMsolActor(identity)
+ * @param msolLamports - amount of mSOL to redeem (in lamports, 9 decimals)
+ * @param solDestination - Solana address to receive SOL (base58)
+ * @returns redemptionId + TX signature for tracking
+ *
+ * @example
+ *   const msol = createMsolActor(identity);
+ *   const ledger = createMsolLedgerActor(identity);
+ *
+ *   // Step 1: Approve (include fee buffer)
+ *   await approveMsolForRedemption(ledger, 100_000_000n); // 0.1 mSOL
+ *
+ *   // Step 2: Redeem
+ *   const result = await redeemMsolForSol(msol, 100_000_000n, "YourSolanaAddress...");
+ *   console.log("SOL arriving at:", result.signatureBase58);
+ */
+export async function redeemMsolForSol(
+  msolActor: any,
+  msolLamports: bigint,
+  solDestination: string,
+): Promise<MsolRedemptionResult> {
+  const result = await msolActor.requestCkSolRedemption(
+    msolLamports,
+    solDestination,
+    [], // recentBlockhash: null (canister fetches)
+  );
+  if ("err" in result) throw new Error(result.err);
+  return {
+    redemptionId: result.ok.redemptionId,
+    signedTxBase64: result.ok.signedTxBase64,
+    signatureBase58: result.ok.signatureBase58,
+  };
+}
+
+/**
+ * APPROVE mSOL canister to burn your mSOL for redemption.
+ *
+ * Must be called before redeemMsolForSol(). Approves the mSOL canister
+ * as a spender on the ICRC-2 ledger. Includes a 100,000 buffer for the
+ * ledger transfer fee.
+ *
+ * @param ledgerActor - from createMsolLedgerActor(identity)
+ * @param msolLamports - amount of mSOL to approve for redemption
+ *
+ * @example
+ *   const ledger = createMsolLedgerActor(identity);
+ *   await approveMsolForRedemption(ledger, 100_000_000n); // approve 0.1 mSOL
+ */
+export async function approveMsolForRedemption(
+  ledgerActor: any,
+  msolLamports: bigint,
+): Promise<void> {
+  const fee = await ledgerActor.icrc1_fee() as bigint;
+  const approveAmount = msolLamports + fee + 100_000n; // buffer for fee
+
+  const result = await ledgerActor.icrc2_approve({
+    from_subaccount: [],
+    spender: {
+      owner: Principal.fromText(CKSOL_MSOL),
+      subaccount: [],
+    },
+    amount: approveAmount,
+    expected_allowance: [],
+    expires_at: [],
+    fee: [fee],
+    memo: [],
+    created_at_time: [],
+  });
+
+  if ("Err" in result) {
+    const err = result.Err;
+    if ("InsufficientFunds" in err) throw new Error(`Insufficient mSOL. Balance: ${err.InsufficientFunds.balance}`);
+    if ("BadFee" in err) throw new Error(`Bad fee. Expected: ${err.BadFee.expected_fee}`);
+    throw new Error(`Approve failed: ${Object.keys(err)[0]}`);
+  }
+}
+
+/**
+ * Get mSOL canister stats (rate, backing, supply).
+ */
+export async function getMsolStats(msolActor: any): Promise<MsolStats> {
+  return msolActor.getCksolStats();
+}
+
+/**
+ * Shortcut: Deposit SOL, receive mSOL. Autonomous path.
+ * Equivalent to depositSolForMsol() with friendlier name.
+ */
+export async function solToMsol(
+  sovereignActor: any,
+  msolActor: any,
+  solAmount: number,
+) {
+  return depositSolForMsol(sovereignActor, msolActor, solAmount);
+}
+
+/**
+ * Shortcut: Burn mSOL, receive SOL. Includes approve step.
+ *
+ * @example
+ *   const msol = createMsolActor(identity);
+ *   const ledger = createMsolLedgerActor(identity);
+ *   await msolToSol(msol, ledger, 100_000_000n, "YourSolAddress...");
+ */
+export async function msolToSol(
+  msolActor: any,
+  ledgerActor: any,
+  msolLamports: bigint,
+  solDestination: string,
+) {
+  await approveMsolForRedemption(ledgerActor, msolLamports);
+  return redeemMsolForSol(msolActor, msolLamports, solDestination);
 }
