@@ -2,7 +2,7 @@
  * Sovereign Send — React Demo Component
  *
  * Drop-in UI for Sovereign Send integration.
- * Shows: wallet address, SOL balance, send form, swap to ICP, convert to mSOL.
+ * Shows: wallet address, SOL balance, send form, swap SOL to ICP.
  *
  * Prerequisites:
  *   npm install @dfinity/agent @dfinity/principal @dfinity/auth-client react
@@ -20,18 +20,22 @@ import {
   getMyAddress,
   signSend,
   sendSol,
-  signDeposit,
   depositSol,
   solToIcp,
-  solToMsol,
   verifyIntegration,
   fetchSolanaBlockhash,
   broadcastSolanaTx,
   solToLamports,
+  maxSendLamports,
+  lamportsToSol,
+  SOLANA_NETWORK_FEE,
 } from "./sovereign-send";
 
 // ── Solana RPC for balance check ─────────────────────────────
 const SOL_RPC = "https://api.mainnet-beta.solana.com";
+
+/** Network fee reserve in SOL (0.00005 SOL = 50,000 lamports). */
+const NETWORK_FEE_SOL = 0.00005;
 
 async function getSolBalance(address: string): Promise<number> {
   try {
@@ -57,7 +61,7 @@ interface Props {
   identity: any; // from AuthClient.getIdentity()
 }
 
-type Tab = "send" | "swap" | "convert";
+type Tab = "send" | "swap";
 
 // ═══════════════════════════════════════════════════════════════
 //  COMPONENT
@@ -78,7 +82,7 @@ export function SovereignSendDemo({ identity }: Props) {
   const [sendAmount, setSendAmount] = useState("");
   const [useAutonomous, setUseAutonomous] = useState(true);
 
-  // Swap/convert amount
+  // Swap amount
   const [depositAmount, setDepositAmount] = useState("");
 
   // ── Init: create actor + get address + balance ─────────
@@ -108,6 +112,19 @@ export function SovereignSendDemo({ identity }: Props) {
     setBalance(bal);
   }, [address]);
 
+  // ── Fill max amount (balance minus network fee reserve) ─
+  const fillMaxAmount = useCallback((setter: (v: string) => void) => {
+    const max = Math.max(0, balance - NETWORK_FEE_SOL);
+    setter(max > 0 ? max.toFixed(9).replace(/\.?0+$/, "") : "0");
+  }, [balance]);
+
+  // ── Check if amount is close to full balance ───────────
+  const isNearMaxBalance = useCallback((amount: string): boolean => {
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed) || parsed <= 0) return false;
+    return parsed > balance - NETWORK_FEE_SOL * 2;
+  }, [balance]);
+
   // ── Send SOL ───────────────────────────────────────────
   const handleSend = useCallback(async () => {
     if (!actor || !sendTo || !sendAmount) return;
@@ -121,7 +138,7 @@ export function SovereignSendDemo({ identity }: Props) {
 
       if (useAutonomous) {
         // Autonomous: one call, canister handles everything
-        setStatus("Sending (autonomous — canister fetches blockhash + broadcasts)...");
+        setStatus("Sending (autonomous -- canister fetches blockhash + broadcasts)...");
         const result = await sendSol(actor, sendTo, amount);
         setTxHash(result.txSignature);
         setStatus(`Sent ${Number(result.sendAmount) / 1e9} SOL + ${Number(result.feeAmount) / 1e9} fee`);
@@ -140,10 +157,10 @@ export function SovereignSendDemo({ identity }: Props) {
     }
   }, [actor, sendTo, sendAmount, useAutonomous, refreshBalance]);
 
-  // ── Swap SOL → ICP ────────────────────────────────────
+  // ── Swap SOL -> ICP ────────────────────────────────────
   const handleSwapToIcp = useCallback(async () => {
     if (!actor || !depositAmount) return;
-    setStatus("Initiating SOL → ICP swap...");
+    setStatus("Initiating SOL -> ICP swap...");
     setError("");
     setTxHash("");
 
@@ -151,54 +168,17 @@ export function SovereignSendDemo({ identity }: Props) {
       const amount = parseFloat(depositAmount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
 
-      if (useAutonomous) {
-        setStatus("Swapping (autonomous)...");
-        const result = await solToIcp(actor, amount);
-        setTxHash(result.txSignature);
-        setStatus(`Swap initiated! Deposit ID: ${Number(result.depositId)}. ICP arriving in ~30-60s.`);
-      } else {
-        setStatus("Signing deposit + broadcasting...");
-        const result = await signDeposit(actor, "w2vjc-2yaaa-aaaab-ae6zq-cai", amount);
-        setTxHash(result.txSignature);
-        setStatus(`Signed + broadcast! Deposit ID: ${Number(result.depositId)}. ICP arriving in ~30-60s.`);
-      }
+      setStatus("Depositing SOL to ICP-SOL swap pool...");
+      const result = await solToIcp(actor, amount);
+      setTxHash(result.txSignature);
+      setStatus(`Swap initiated! Deposit ID: ${Number(result.depositId)}. ICP arriving in ~30-60s.`);
 
       await refreshBalance();
     } catch (e: any) {
       setError(e.message);
       setStatus("");
     }
-  }, [actor, depositAmount, useAutonomous, refreshBalance]);
-
-  // ── Convert SOL → mSOL ────────────────────────────────
-  const handleConvertToMsol = useCallback(async () => {
-    if (!actor || !depositAmount) return;
-    setStatus("Converting SOL → mSOL...");
-    setError("");
-    setTxHash("");
-
-    try {
-      const amount = parseFloat(depositAmount);
-      if (isNaN(amount) || amount < 0.05) throw new Error("Minimum 0.05 SOL for mSOL conversion");
-
-      if (useAutonomous) {
-        setStatus("Converting (autonomous)...");
-        const result = await solToMsol(actor, amount);
-        setTxHash(result.txSignature);
-        setStatus(`Conversion initiated! Deposit ID: ${Number(result.depositId)}. mSOL will be credited after verification.`);
-      } else {
-        setStatus("Signing deposit + broadcasting...");
-        const result = await signDeposit(actor, "crmds-kqaaa-aaaaf-qf5aq-cai", amount);
-        setTxHash(result.txSignature);
-        setStatus(`Signed + broadcast! Deposit ID: ${Number(result.depositId)}. mSOL arriving after verification.`);
-      }
-
-      await refreshBalance();
-    } catch (e: any) {
-      setError(e.message);
-      setStatus("");
-    }
-  }, [actor, depositAmount, useAutonomous, refreshBalance]);
+  }, [actor, depositAmount, refreshBalance]);
 
   // ── Render ─────────────────────────────────────────────
   if (loading) return <div style={styles.container}><p>Deriving your Solana wallet...</p></div>;
@@ -234,20 +214,20 @@ export function SovereignSendDemo({ identity }: Props) {
         </label>
         <p style={styles.hint}>
           {useAutonomous
-            ? "One call — canister fetches blockhash + broadcasts. Simpler but ~500M cycles."
-            : "Sign-only — you fetch blockhash + broadcast. Cheaper, more control."}
+            ? "One call -- canister fetches blockhash + broadcasts. Simpler but ~500M cycles."
+            : "Sign-only -- you fetch blockhash + broadcast. Cheaper, more control."}
         </p>
       </div>
 
       {/* Tabs */}
       <div style={styles.tabs}>
-        {(["send", "swap", "convert"] as Tab[]).map((t) => (
+        {(["send", "swap"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setStatus(""); setError(""); setTxHash(""); }}
             style={tab === t ? { ...styles.tab, ...styles.activeTab } : styles.tab}
           >
-            {t === "send" ? "Send SOL" : t === "swap" ? "SOL → ICP" : "SOL → mSOL"}
+            {t === "send" ? "Send SOL" : "SOL -> ICP"}
           </button>
         ))}
       </div>
@@ -263,15 +243,29 @@ export function SovereignSendDemo({ identity }: Props) {
               onChange={(e) => setSendTo(e.target.value)}
               style={styles.input}
             />
-            <input
-              type="number"
-              placeholder="Amount (SOL)"
-              value={sendAmount}
-              onChange={(e) => setSendAmount(e.target.value)}
-              step="0.001"
-              min="0.00001"
-              style={styles.input}
-            />
+            <div style={styles.inputRow}>
+              <input
+                type="number"
+                placeholder="Amount (SOL)"
+                value={sendAmount}
+                onChange={(e) => setSendAmount(e.target.value)}
+                step="0.001"
+                min="0.00001"
+                style={{ ...styles.input, marginBottom: 0, flex: 1 }}
+              />
+              <button
+                onClick={() => fillMaxAmount(setSendAmount)}
+                style={styles.maxBtn}
+                title={`Fill max: balance minus ${NETWORK_FEE_SOL} SOL network fee reserve`}
+              >
+                Max
+              </button>
+            </div>
+            {isNearMaxBalance(sendAmount) && (
+              <p style={styles.feeWarning}>
+                Near full balance. 50,000 lamports ({NETWORK_FEE_SOL} SOL) reserved for the Solana network fee.
+              </p>
+            )}
             <p style={styles.hint}>0.1% protocol fee deducted atomically from send amount.</p>
             <button onClick={handleSend} style={styles.button} disabled={!sendTo || !sendAmount}>
               Send SOL
@@ -281,47 +275,43 @@ export function SovereignSendDemo({ identity }: Props) {
 
         {tab === "swap" && (
           <>
-            <input
-              type="number"
-              placeholder="SOL amount to swap"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              step="0.01"
-              min="0.001"
-              style={styles.input}
-            />
-            <p style={styles.hint}>SOL is sent to the ICP-SOL oracle pool. You receive ICP at the current oracle rate. No fee on deposit — full amount swapped.</p>
+            <div style={styles.inputRow}>
+              <input
+                type="number"
+                placeholder="SOL amount to swap"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                step="0.01"
+                min="0.001"
+                style={{ ...styles.input, marginBottom: 0, flex: 1 }}
+              />
+              <button
+                onClick={() => fillMaxAmount(setDepositAmount)}
+                style={styles.maxBtn}
+                title={`Fill max: balance minus ${NETWORK_FEE_SOL} SOL network fee reserve`}
+              >
+                Max
+              </button>
+            </div>
+            {isNearMaxBalance(depositAmount) && (
+              <p style={styles.feeWarning}>
+                Near full balance. 50,000 lamports ({NETWORK_FEE_SOL} SOL) reserved for the Solana network fee.
+              </p>
+            )}
+            <p style={styles.hint}>SOL is sent to the ICP-SOL oracle pool. You receive ICP at the current oracle rate. No fee on deposit -- full amount swapped.</p>
             <button onClick={handleSwapToIcp} style={styles.button} disabled={!depositAmount}>
-              Swap SOL → ICP
-            </button>
-          </>
-        )}
-
-        {tab === "convert" && (
-          <>
-            <input
-              type="number"
-              placeholder="SOL amount (min 0.05)"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              step="0.01"
-              min="0.05"
-              style={styles.input}
-            />
-            <p style={styles.hint}>SOL is deposited into the ckSOL pool. You receive mSOL (yield-bearing wrapped SOL) on ICP. Minimum 0.05 SOL.</p>
-            <button onClick={handleConvertToMsol} style={styles.button} disabled={!depositAmount}>
-              Convert SOL → mSOL
+              Swap SOL -> ICP
             </button>
           </>
         )}
       </div>
 
       {/* Status / Error / TX */}
-      {status && <p style={styles.status}>⏳ {status}</p>}
-      {error && <p style={styles.error}>✗ {error}</p>}
+      {status && <p style={styles.status}>{status}</p>}
+      {error && <p style={styles.error}>{error}</p>}
       {txHash && (
         <p style={styles.tx}>
-          ✓ TX:{" "}
+          TX:{" "}
           <a href={`https://solscan.io/tx/${txHash}`} target="_blank" rel="noopener" style={styles.link}>
             {txHash.slice(0, 20)}...{txHash.slice(-8)}
           </a>
@@ -347,6 +337,9 @@ const styles: Record<string, React.CSSProperties> = {
   tab: { flex: 1, padding: "10px 0", border: "1px solid #dee2e6", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 },
   activeTab: { background: "#212529", color: "#fff", borderColor: "#212529" },
   input: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #dee2e6", fontSize: 14, marginBottom: 8, boxSizing: "border-box" as const },
+  inputRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8 },
+  maxBtn: { padding: "10px 14px", borderRadius: 8, border: "1px solid #dee2e6", background: "#e9ecef", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" as const },
+  feeWarning: { fontSize: 12, color: "#e67700", marginTop: 2, marginBottom: 4 },
   button: { width: "100%", padding: "12px 0", borderRadius: 8, border: "none", background: "#212529", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 8 },
   status: { fontSize: 13, color: "#495057", marginTop: 8 },
   error: { fontSize: 13, color: "#dc3545", marginTop: 8 },

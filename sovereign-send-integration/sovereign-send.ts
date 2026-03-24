@@ -11,7 +11,6 @@
  * │                                                             │
  * │  SIGN-ONLY  (caller broadcasts, 0 canister cycle cost):     │
  * │  • signSend(to, amount, blockhash)     → signed TX + sig    │
- * │  • signDeposit(target, amt, blockhash) → signed + deposit   │
  * │                                                             │
  * │  AUTONOMOUS  (canister does everything, ~500M cycle cost):  │
  * │  • sendSol(to, amount)                → TX broadcast by IC  │
@@ -20,13 +19,25 @@
  * ├─────────────────────────────────────────────────────────────┤
  * │  TARGETS:                                                   │
  * │  • ICP-SOL Swap  — send SOL, receive ICP at oracle rate     │
- * │  • mSOL          — send SOL, receive yield-bearing mSOL     │
  * │  • SOL Borrow V3 — send SOL collateral, receive USDC loan   │
  * └─────────────────────────────────────────────────────────────┘
  *
  * CANISTER:  fxjsq-raaaa-aaaab-agdaa-cai
  * FEE:       0.1% (10 basis points) per signSend/sendSol
  * DEPOSIT:   0% fee (full amount goes to treasury)
+ *
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  SOLANA NETWORK FEE                                         │
+ * │                                                             │
+ * │  Every Solana transaction costs ~5,000-50,000 lamports in   │
+ * │  network fees (paid to Solana validators, not to us).       │
+ * │                                                             │
+ * │  When sending near-full balance, subtract at least 50,000   │
+ * │  lamports to avoid "insufficient lamports" errors.          │
+ * │  Use maxSendLamports(balance) to calculate the safe max.    │
+ * │                                                             │
+ * │  This applies to both sendSol and depositSol.               │
+ * └─────────────────────────────────────────────────────────────┘
  *
  * ┌─────────────────────────────────────────────────────────────┐
  * │  PARTNER REVENUE SHARE                                      │
@@ -56,13 +67,20 @@ import { IDL } from "@dfinity/candid";
 
 const SOVEREIGN_SEND = "fxjsq-raaaa-aaaab-agdaa-cai";
 const ICP_SOL_SWAP   = "w2vjc-2yaaa-aaaab-ae6zq-cai";
-const CKSOL_CANISTER = "crmds-kqaaa-aaaaf-qf5aq-cai";
 const SOL_BORROW_V3  = "p7teu-wyaaa-aaaab-afnvq-cai";
 const IC_HOST        = "https://icp-api.io";
+
+/**
+ * Reserve 50,000 lamports for the Solana network fee.
+ * Actual fees are typically 5,000-10,000 lamports, but we reserve
+ * a larger margin to account for priority fees and fee spikes.
+ */
+export const SOLANA_NETWORK_FEE = 50_000n;
 
 const SOLANA_RPCS = [
   "https://api.mainnet-beta.solana.com",
   "https://solana-rpc.publicnode.com",
+  "https://solana.drpc.org",
   "https://rpc.ankr.com/solana",
 ];
 
@@ -82,7 +100,6 @@ const sovereignSendIDL = ({ IDL }: any) => {
   const TreasuryType = IDL.Variant({
     IcpSolSwap: IDL.Null,
     SolBorrow: IDL.Null,
-    CkSol: IDL.Null,
   });
 
   return IDL.Service({
@@ -111,19 +128,6 @@ const sovereignSendIDL = ({ IDL }: any) => {
           sendAmount: IDL.Nat64,
           feeAmount: IDL.Nat64,
           txSignature: IDL.Text,
-        }),
-        err: IDL.Text,
-      })],
-      [],
-    ),
-
-    signDeposit: IDL.Func(
-      [IDL.Principal, IDL.Nat64, IDL.Text, IDL.Opt(BorrowParams)],
-      [IDL.Variant({
-        ok: IDL.Record({
-          signedTxBase64: IDL.Text,
-          txSignature: IDL.Text,
-          depositId: IDL.Nat,
         }),
         err: IDL.Text,
       })],
@@ -210,12 +214,6 @@ interface SignSendResult {
   txSignature: string;
 }
 
-interface SignDepositResult {
-  signedTxBase64: string;
-  txSignature: string;
-  depositId: bigint;
-}
-
 interface AutonomousSendResult {
   txSignature: string;
   sendAmount: bigint;
@@ -247,7 +245,7 @@ export function createSovereignSendActor(identity: any) {
 //  SOLANA HELPERS (for sign-only path)
 // ═══════════════════════════════════════════════════════════════
 
-/** Fetch a recent Solana blockhash. Tries 3 RPCs with fallback. */
+/** Fetch a recent Solana blockhash. Tries RPCs with sequential fallback. */
 export async function fetchSolanaBlockhash(): Promise<string> {
   for (const rpc of SOLANA_RPCS) {
     try {
@@ -267,24 +265,34 @@ export async function fetchSolanaBlockhash(): Promise<string> {
   throw new Error("Failed to fetch Solana blockhash from all RPCs");
 }
 
-/** Broadcast a base64-encoded signed Solana TX. Returns TX signature. */
+/**
+ * Broadcast a base64-encoded signed Solana TX. Returns TX signature.
+ *
+ * Sends to ALL RPCs in parallel via Promise.any — Solana transactions
+ * are idempotent (same TX submitted twice = same result), so it is safe
+ * and faster to broadcast to multiple RPCs simultaneously.
+ */
 export async function broadcastSolanaTx(signedTxBase64: string): Promise<string> {
-  for (const rpc of SOLANA_RPCS) {
-    try {
-      const res = await fetch(rpc, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0", id: 1,
-          method: "sendTransaction",
-          params: [signedTxBase64, { encoding: "base64", skipPreflight: true }],
-        }),
-      });
-      const json = await res.json();
-      if (json.result) return json.result;
-    } catch { continue; }
+  const attempts = SOLANA_RPCS.map(async (rpc) => {
+    const res = await fetch(rpc, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0", id: 1,
+        method: "sendTransaction",
+        params: [signedTxBase64, { encoding: "base64", skipPreflight: true }],
+      }),
+    });
+    const json = await res.json();
+    if (json.result) return json.result as string;
+    throw new Error(json.error?.message ?? "No result from RPC");
+  });
+
+  try {
+    return await Promise.any(attempts);
+  } catch {
+    throw new Error("Broadcast failed on all RPCs");
   }
-  throw new Error("Broadcast failed on all RPCs");
 }
 
 /** Convert SOL amount (e.g. 0.5) to lamports (500_000_000). */
@@ -292,8 +300,32 @@ export function solToLamports(sol: number): bigint {
   return BigInt(Math.round(sol * 1_000_000_000));
 }
 
+/**
+ * Calculate the maximum sendable lamports after reserving for the Solana network fee.
+ *
+ * Every Solana TX costs ~5,000-50,000 lamports in validator fees.
+ * When sending your full balance, subtract this reserve to avoid
+ * "insufficient lamports for rent" or "insufficient funds" errors.
+ *
+ * @param balanceLamports - Current wallet balance in lamports
+ * @returns Maximum lamports you can send/deposit safely
+ *
+ * Example:
+ *   const balance = 1_500_000_000n; // 1.5 SOL
+ *   const max = maxSendLamports(balance); // 1_499_950_000n (1.5 SOL - 50k fee)
+ */
+export function maxSendLamports(balanceLamports: bigint): bigint {
+  if (balanceLamports <= SOLANA_NETWORK_FEE) return 0n;
+  return balanceLamports - SOLANA_NETWORK_FEE;
+}
+
+/** Convert lamports to SOL for display (e.g. 1_500_000_000 -> 1.5). */
+export function lamportsToSol(lamports: bigint): number {
+  return Number(lamports) / 1_000_000_000;
+}
+
 // ═══════════════════════════════════════════════════════════════
-//  API — The 6 operations developers use
+//  API — The operations developers use
 // ═══════════════════════════════════════════════════════════════
 
 /**
@@ -318,10 +350,13 @@ export async function getMyAddress(actor: any): Promise<{ address: string; publi
  * You provide the blockhash and broadcast the TX yourself.
  * This is the cheapest path — 0 canister cycles for broadcast.
  *
+ * NOTE: When sending near-full balance, use maxSendLamports() to
+ * reserve enough for the Solana network fee (~50,000 lamports).
+ *
  * Flow:
  *   1. fetchSolanaBlockhash() from any Solana RPC
- *   2. signSend(destination, lamports, blockhash) → signed TX
- *   3. broadcastSolanaTx(signedTxBase64) → TX lands on Solana
+ *   2. signSend(destination, lamports, blockhash) -> signed TX
+ *   3. broadcastSolanaTx(signedTxBase64) -> TX lands on Solana
  */
 export async function signSend(
   actor: any,
@@ -348,10 +383,13 @@ export async function signSend(
  * One call. The canister:
  *   1. Fetches a fresh Solana blockhash via HTTP outcall
  *   2. Signs the atomic TX (destination + 0.1% fee)
- *   3. Broadcasts to 3 Solana RPCs in parallel
+ *   3. Broadcasts to Solana RPCs in parallel
  *
  * Higher cycle cost (~500M) but simplest integration.
  * No Solana RPC handling needed on your end.
+ *
+ * NOTE: When sending near-full balance, use maxSendLamports() to
+ * reserve enough for the Solana network fee (~50,000 lamports).
  */
 export async function sendSol(
   actor: any,
@@ -365,67 +403,54 @@ export async function sendSol(
 }
 
 /**
- * SIGN-ONLY DEPOSIT — Send SOL to a registered treasury.
- *
- * The canister signs a TX sending 100% of your SOL to the target
- * treasury, then calls that canister's expectDeposit to register it.
- *
- * Supported targets:
- *   - ICP-SOL Swap (w2vjc): you send SOL, receive ICP at oracle rate
- *   - mSOL (crmds): you send SOL, receive yield-bearing mSOL on ICP
- *   - SOL Borrow V3 (p7teu): you send SOL collateral, receive USDC loan
- *
- * Flow:
- *   1. fetchSolanaBlockhash()
- *   2. signDeposit(targetCanister, lamports, blockhash) → signed TX + depositId
- *   3. broadcastSolanaTx(signedTxBase64) → SOL arrives at treasury
- *   4. Target canister auto-detects deposit → sends ICP/mSOL/USDC to you
- */
-export async function signDeposit(
-  actor: any,
-  targetCanisterId: string,
-  solAmount: number,
-): Promise<{ txSignature: string; signedTxBase64: string; depositId: bigint }> {
-  const blockhash = await fetchSolanaBlockhash();
-  const lamports = solToLamports(solAmount);
-
-  const result = await actor.signDeposit(
-    Principal.fromText(targetCanisterId),
-    lamports,
-    blockhash,
-    [], // no borrow params for swap/mSOL
-  );
-  if ("err" in result) throw new Error(result.err);
-
-  const { signedTxBase64, txSignature, depositId } = result.ok;
-
-  // Broadcast promptly — target canister starts checking within 15s
-  await broadcastSolanaTx(signedTxBase64);
-
-  return { txSignature, signedTxBase64, depositId };
-}
-
-/**
- * AUTONOMOUS DEPOSIT — Send SOL to treasury, canister handles everything.
+ * AUTONOMOUS DEPOSIT — Send SOL to a registered treasury.
  *
  * One call. The canister:
  *   1. Fetches Solana blockhash via HTTP outcall
  *   2. Signs TX sending SOL to target treasury
- *   3. Broadcasts to 3 Solana RPCs
+ *   3. Broadcasts to Solana RPCs
  *   4. Calls target canister's expectDeposit
  *
- * You receive ICP/mSOL/USDC automatically after Solana confirms.
+ * Supported targets:
+ *   - ICP-SOL Swap (w2vjc): you send SOL, receive ICP at oracle rate
+ *   - SOL Borrow V3 (p7teu): you send SOL collateral, receive USDC loan
+ *
+ * You receive ICP/USDC automatically after Solana confirms.
+ *
+ * NOTE: When depositing near-full balance, use maxSendLamports() to
+ * reserve enough for the Solana network fee (~50,000 lamports).
+ *
+ * @param actor - Sovereign Send actor
+ * @param targetCanisterId - Target treasury canister ID (e.g. ICP_SOL_SWAP or SOL_BORROW_V3)
+ * @param solAmount - Amount of SOL to deposit (human-readable, e.g. 0.5)
+ * @param borrowParams - Optional. Required only for SOL Borrow V3 deposits.
  */
 export async function depositSol(
   actor: any,
   targetCanisterId: string,
   solAmount: number,
+  borrowParams?: {
+    iasolExpected: bigint;
+    iausdToMint: bigint;
+    minUsdcOut: bigint;
+    userPubkey: Uint8Array;
+    userUsdcAta: Uint8Array;
+  },
 ): Promise<AutonomousDepositResult> {
   const lamports = solToLamports(solAmount);
+  const bpOpt = borrowParams
+    ? [{
+        iasolExpected: borrowParams.iasolExpected,
+        iausdToMint: borrowParams.iausdToMint,
+        minUsdcOut: borrowParams.minUsdcOut,
+        userPubkey: Array.from(borrowParams.userPubkey),
+        userUsdcAta: Array.from(borrowParams.userUsdcAta),
+      }]
+    : [];
   const result = await actor.depositSol(
     Principal.fromText(targetCanisterId),
     lamports,
-    [], // no borrow params for swap/mSOL
+    bpOpt,
   );
   if ("err" in result) throw new Error(result.err);
   return result.ok;
@@ -440,19 +465,12 @@ export async function solToIcp(actor: any, solAmount: number) {
   return depositSol(actor, ICP_SOL_SWAP, solAmount);
 }
 
-/** Send SOL, receive yield-bearing mSOL. Autonomous — one call. */
-export async function solToMsol(actor: any, solAmount: number) {
-  return depositSol(actor, CKSOL_CANISTER, solAmount);
-}
-
-/** Send SOL, receive ICP. Sign-only — you broadcast. */
+/**
+ * Send SOL, receive ICP. Sign-only style — but uses autonomous depositSol
+ * under the hood since deposits have no sign-only variant in the canister.
+ */
 export async function signSolToIcp(actor: any, solAmount: number) {
-  return signDeposit(actor, ICP_SOL_SWAP, solAmount);
-}
-
-/** Send SOL, receive mSOL. Sign-only — you broadcast. */
-export async function signSolToMsol(actor: any, solAmount: number) {
-  return signDeposit(actor, CKSOL_CANISTER, solAmount);
+  return depositSol(actor, ICP_SOL_SWAP, solAmount);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -484,12 +502,12 @@ export async function verifyIntegration(actor: any): Promise<{
     treasuries: treasuries.map(([p, sol]: [any, string]) => [p.toText(), sol]),
   };
 
-  console.log("✓ Sovereign Send Integration Verified");
+  console.log("Sovereign Send Integration Verified");
   console.log("  Your SOL address:", result.myAddress);
   console.log("  Fee treasury:", result.feeTreasury);
   console.log("  Registered treasuries:", result.treasuries.length);
   for (const [canister, solAddr] of result.treasuries) {
-    console.log("    ", canister, "→", solAddr.slice(0, 12) + "...");
+    console.log("    ", canister, "->", solAddr.slice(0, 12) + "...");
   }
 
   return result;
@@ -563,128 +581,4 @@ export async function removePartnerUsers(
 /** Query the canister's Derivation Shield status — free, no auth needed. */
 export async function getShieldStatus(actor: any): Promise<ShieldStatus> {
   return actor.getShieldStatus();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  mSOL REDEMPTION — Convert mSOL back to SOL
-// ═══════════════════════════════════════════════════════════════
-//
-//  mSOL is yield-bearing chain-key SOL on ICP. It appreciates against
-//  SOL over time — 1 mSOL is always worth >= 1 SOL.
-//  To redeem: burn mSOL → receive SOL at the current exchange rate.
-//
-//  Flow:
-//    1. Approve the ckSol canister to spend your mSOL (ICRC-2 approve)
-//    2. Call requestCkSolRedemption(amount, solDestination, blockhash?)
-//    3. Canister burns your mSOL, signs a SOL transfer, returns signed TX
-//    4. You broadcast the signed TX to Solana
-//    5. Canister auto-confirms via timer
-//
-//  Uses the same ckSol canister (crmds-kqaaa-aaaaf-qf5aq-cai) that
-//  handles deposits via Sovereign Send's depositSol/signDeposit.
-
-const ckSolIDL = ({ IDL }: any) => {
-  return IDL.Service({
-    requestCkSolRedemption: IDL.Func(
-      [IDL.Nat64, IDL.Text, IDL.Opt(IDL.Text)],
-      [IDL.Variant({
-        ok: IDL.Record({
-          redemptionId: IDL.Nat,
-          signedTxBase64: IDL.Text,
-          signatureBase58: IDL.Text,
-        }),
-        err: IDL.Text,
-      })],
-      [],
-    ),
-    getCksolRate: IDL.Func([], [IDL.Record({
-      solPerCkSolE9: IDL.Nat64,
-      totalCkSolSupply: IDL.Nat64,
-      totalSolBacking: IDL.Nat64,
-    })], ["query"]),
-  });
-};
-
-const MSOL_LEDGER = "2ykjj-eyaaa-aaaae-af4ma-cai";
-
-interface RedemptionResult {
-  redemptionId: bigint;
-  signedTxBase64: string;
-  signatureBase58: string;
-}
-
-/**
- * Redeem mSOL → SOL. Full flow:
- *   1. ICRC-2 approve (caller must approve ckSol canister to spend mSOL)
- *   2. requestCkSolRedemption — burns mSOL, signs SOL TX
- *   3. Broadcast signed SOL TX to Solana
- *
- * @param identity  - Your authenticated IC identity
- * @param msolAmount - Amount of mSOL to redeem (human-readable, e.g. 1.5)
- * @param solDestination - Your Solana address (base58). Use getMyAddress() from Sovereign Send.
- * @param blockhash - Optional recent Solana blockhash. If omitted, canister fetches one.
- * @returns TX signature on Solana + redemption ID
- *
- * IMPORTANT: You must first call icrc2_approve on the mSOL ledger (2ykjj-eyaaa-aaaae-af4ma-cai)
- * granting the ckSol canister (crmds-kqaaa-aaaaf-qf5aq-cai) permission to spend your mSOL:
- *
- *   await msolLedger.icrc2_approve({
- *     spender: { owner: Principal.fromText("crmds-kqaaa-aaaaf-qf5aq-cai"), subaccount: [] },
- *     amount: BigInt(Math.round(msolAmount * 1e9)) + 10_000n, // add buffer for fee
- *   });
- */
-export async function redeemMsol(
-  identity: any,
-  msolAmount: number,
-  solDestination: string,
-  blockhash?: string,
-): Promise<{ txSignature: string; redemptionId: bigint }> {
-  const agent = await HttpAgent.create({ identity, host: IC_HOST });
-  const ckSolActor = Actor.createActor(ckSolIDL, {
-    agent,
-    canisterId: CKSOL_CANISTER,
-  });
-
-  const lamports = BigInt(Math.round(msolAmount * 1e9));
-  const bhOpt = blockhash ? [blockhash] : [];
-
-  const result: any = await ckSolActor.requestCkSolRedemption(
-    lamports,
-    solDestination,
-    bhOpt,
-  );
-  if ("err" in result) throw new Error(result.err);
-
-  const { redemptionId, signedTxBase64, signatureBase58 } = result.ok as RedemptionResult;
-
-  // Broadcast to Solana
-  const txSig = await broadcastTx(signedTxBase64);
-
-  console.log(`mSOL redeemed: ${msolAmount} mSOL → SOL`);
-  console.log(`  Redemption ID: ${redemptionId}`);
-  console.log(`  Solana TX: ${txSig}`);
-  console.log(`  Canister will auto-confirm via timer.`);
-
-  return { txSignature: txSig, redemptionId };
-}
-
-/** Get current mSOL exchange rate and backing info. */
-export async function getMsolRate(identity?: any): Promise<{
-  solPerMsol: number;
-  totalMsolSupply: number;
-  totalSolBacking: number;
-}> {
-  const agent = identity
-    ? await HttpAgent.create({ identity, host: IC_HOST })
-    : await HttpAgent.create({ host: IC_HOST });
-  const ckSolActor = Actor.createActor(ckSolIDL, {
-    agent,
-    canisterId: CKSOL_CANISTER,
-  });
-  const rate: any = await ckSolActor.getCksolRate();
-  return {
-    solPerMsol: Number(rate.solPerCkSolE9) / 1e9,
-    totalMsolSupply: Number(rate.totalCkSolSupply) / 1e9,
-    totalSolBacking: Number(rate.totalSolBacking) / 1e9,
-  };
 }
