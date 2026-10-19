@@ -3,6 +3,19 @@
 Multi-chain payment gateway on the Internet Computer. Send, swap, stake, and manage liquidity
 across 19 blockchains from a single canister.
 
+## Privacy SDK
+
+**[privacy-sdk/](./privacy-sdk/README.md)** gives any app private ICP balances on the live shielded
+ledger. Users move ICP into a private balance, send it privately, pay someone who has not set up a
+private balance yet ([claimable payments](./privacy-sdk/CLAIMABLE-PAYMENTS.md)), and move it back
+out. Proofs are made in the user's browser; keys and notes never leave it.
+
+- Talks to the shielded ledger directly (`3pwrb-oiaaa-aaaao-bbqba-cai`): no MeneseSDK subscription
+  needed, and every app pays the same ledger fees.
+- The ledger, its trusted-setup ceremony and the ceremony record are open source in
+  [Shielded-Ledger-Hivemind](https://github.com/Menese-Protocol/Shielded-Ledger-Hivemind).
+- The prover and claim scanner rebuild byte for byte from that public source.
+
 ## What You Can Build
 
 MeneseSDK is a **programmable multi-chain execution layer**. Your canister or frontend can
@@ -88,6 +101,14 @@ let balance = await menese.callEvmContractRead(
 );
 ```
 
+### Private ICP Balances
+Give your users a private ICP balance on the live shielded ledger ([`privacy-sdk/`](./privacy-sdk/README.md)):
+
+- **Make private / move out** — move ICP into a private balance and back
+- **Private send** — send to anyone, with amounts and recipients hidden on chain
+- **Claimable payments** — pay someone who has not set up a private balance yet; they claim it later
+- Proofs are made in the user's browser; keys and notes never leave it
+
 ---
 
 ## Two Integration Modes
@@ -135,6 +156,12 @@ Both modes consume 1 action per operation from your subscription.
 │   ├── wallet_commands.py      # Python CLI wrapper (Approach B)
 │   ├── README.md               # Setup guide + two integration approaches
 │   └── references/             # API surface + automation patterns
+├── privacy-sdk/                # Private ICP balances on the shielded ledger
+│   ├── src/engine/core.ts      # PrivateEngine: make private, send, claim, move out
+│   ├── src/zk/                 # The client: notes, proofs, transfers, claim envelopes
+│   ├── claim-scan-wasm/        # Claim scanner source (Rust → wasm)
+│   ├── tools/                  # Key preparation + reproducible wasm build
+│   └── README.md
 ├── scripts/                    # Internal validation tools
 ├── AI_CODING_GUIDE.md          # AI-assisted development tips
 └── README.md                   # This file

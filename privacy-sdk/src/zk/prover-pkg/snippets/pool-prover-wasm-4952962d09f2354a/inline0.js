@@ -1,0 +1,1 @@
+export function js_sys_now() { return Date.now(); }
