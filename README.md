@@ -14,6 +14,8 @@ out. Proofs are made in the user's browser; keys and notes never leave it.
   needed, and every app pays the same ledger fees.
 - The ledger, its trusted-setup ceremony and the ceremony record are open source in
   [Shielded-Ledger-Hivemind](https://github.com/Menese-Protocol/Shielded-Ledger-Hivemind).
+- Building with an AI coding agent? Give it [`privacy-sdk/SKILL.md`](./privacy-sdk/SKILL.md): it walks the
+  agent through the whole setup, from an empty folder to private payments in your app.
 - The prover and claim scanner rebuild byte for byte from that public source.
 
 ## What You Can Build
@@ -161,6 +163,7 @@ Both modes consume 1 action per operation from your subscription.
 │   ├── src/zk/                 # The client: notes, proofs, transfers, claim envelopes
 │   ├── claim-scan-wasm/        # Claim scanner source (Rust → wasm)
 │   ├── tools/                  # Key preparation + reproducible wasm build
+│   ├── SKILL.md                # Agent skill file: feed it to your AI coding agent
 │   └── README.md
 ├── scripts/                    # Internal validation tools
 ├── AI_CODING_GUIDE.md          # AI-assisted development tips

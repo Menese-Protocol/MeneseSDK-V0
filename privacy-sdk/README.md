@@ -51,7 +51,11 @@ npm install @dfinity/agent@^3.4.3 @dfinity/principal@^3.4.3 @dfinity/identity@^3
 ```
 
 Copy `src/` into your app. The workers are ES modules, so your bundler must support
-`new Worker(new URL(...), { type: "module" })` (Vite does).
+`new Worker(new URL(...), { type: "module" })` (Vite does). In a new Vite TypeScript project, set
+`"erasableSyntaxOnly": false` and `"noImplicitAny": false` in `tsconfig.app.json`, because `src/zk/` is
+plain JavaScript.
+
+Using an AI coding agent? Give it [`SKILL.md`](./SKILL.md): it covers the whole setup step by step.
 
 ## Serve the proving keys
 

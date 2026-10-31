@@ -1,6 +1,6 @@
 ---
-name: menesesdk-wallet
-description: Multi-chain crypto wallet operations via MeneseSDK on ICP. Supports 19 blockchains — addresses, balances, sends, swaps, DeFi (Aave/Lido/Uniswap/ICPSwap/KongSwap), ICRC tokens, ICP LP, AI rebalancing, and automated strategies (DCA, stop-loss, take-profit). Triggers on any crypto wallet, transfer, swap, DeFi, or automation request.
+name: menesesdk
+description: Multi-chain operations via MeneseSDK on ICP. Supports 19 blockchains — addresses, balances, sends, swaps, DeFi (Aave/Lido/Uniswap/ICPSwap/KongSwap), ICRC tokens, ICP LP, AI rebalancing, and automated strategies (DCA, stop-loss, take-profit). Triggers on any multi-chain address, balance, transfer, swap, DeFi, or automation request. For private ICP balances and private payments, use privacy-sdk/SKILL.md instead.
 ---
 
 # MeneseSDK Agent Skill Guide
@@ -19,11 +19,11 @@ If you don't have dfx installed yet, run these commands first:
 # Install dfx (the IC SDK)
 sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
 
-# Create a new identity for your wallet
-dfx identity new my-wallet --storage-mode=plaintext
+# Create a new identity for your agent
+dfx identity new menese-agent --storage-mode=plaintext
 
 # Switch to the new identity
-dfx identity use my-wallet
+dfx identity use menese-agent
 
 # Suppress the plaintext identity warning (add to your shell profile too)
 export DFX_WARNING=-mainnet_plaintext_identity
@@ -31,11 +31,11 @@ export DFX_WARNING=-mainnet_plaintext_identity
 # Verify connectivity — should return (true)
 dfx canister call urs2a-ziaaa-aaaad-aembq-cai health '()' --network ic
 
-# Get your principal (this is your unique wallet identifier)
+# Get your principal (this is your unique account identifier)
 dfx identity get-principal
 ```
 
-All wallet addresses are **deterministic per principal** — the same identity always produces the same addresses across all 19 chains.
+All chain addresses are **deterministic per principal** — the same identity always produces the same addresses across all 19 chains.
 
 **How to call any function:**
 ```bash
@@ -45,7 +45,7 @@ dfx canister call urs2a-ziaaa-aaaad-aembq-cai <method> '(<args>)' --network ic
 **First steps (all FREE):**
 1. Get your addresses: `dfx canister call urs2a-ziaaa-aaaad-aembq-cai getAllAddresses '()' --network ic`
 2. Check all balances: `dfx canister call urs2a-ziaaa-aaaad-aembq-cai getAllBalances '()' --network ic`
-3. Fund your wallet on the chain you need (send crypto to the address from step 1)
+3. Fund your address on the chain you need (send crypto to the address from step 1)
 4. Perform operations (each costs 1 action from your subscription)
 
 **Supported chains:** Solana, Ethereum, Bitcoin, Arbitrum, Base, Polygon, BSC, Optimism, ICP, XRP, SUI, TON, Cardano, Aptos, NEAR, Tron, Litecoin, CloakCoin, THORChain.
