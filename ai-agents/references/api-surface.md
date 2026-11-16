@@ -1,5 +1,7 @@
 # MeneseSDK Full API Reference
 
+> The complete, current method list, with each method's cost and the methods only the gateway's controllers may call, is generated from the live gateway: [docs/api](../../docs/api/README.md). This file groups the methods and describes their types.
+
 Complete function signatures and type definitions for `urs2a-ziaaa-aaaad-aembq-cai`.
 Total: **336 public functions** as defined in `backend.did`.
 

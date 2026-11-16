@@ -165,6 +165,8 @@ Both modes consume 1 action per operation from your subscription.
 │   ├── tools/                  # Key preparation + reproducible wasm build
 │   ├── SKILL.md                # Agent skill file: feed it to your AI coding agent
 │   └── README.md
+├── api-reference/              # Generates docs/api from the live gateway; drift check
+├── docs/api/                   # API reference: every gateway method
 ├── scripts/                    # Internal validation tools
 ├── AI_CODING_GUIDE.md          # AI-assisted development tips
 └── README.md                   # This file
@@ -181,6 +183,7 @@ ICP, XRP, SUI, TON, Cardano, Tron, Aptos, NEAR, CloakCoin, THORChain
 |---|---|
 | **Canister ID** | `urs2a-ziaaa-aaaad-aembq-cai` |
 | **Candid UI** | https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=urs2a-ziaaa-aaaad-aembq-cai |
+| **API reference** | [docs/api](docs/api/README.md): every method, generated from the live candid |
 | **Local dev** | `dfx start` then `dfx deploy` |
 
 ## Subscription Packages
@@ -202,13 +205,15 @@ dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant {
 dfx canister call urs2a-ziaaa-aaaad-aembq-cai getMyGatewayAccount '()' --network ic
 ```
 
-## FREE Operations (no subscription needed)
+## Which calls use an action
 
-- All address derivation (19 chains): `getMySolanaAddress`, `getMyEvmAddress`, `getAllAddresses`, etc.
-- All balance queries: `getMySolanaBalance`, `getAllBalances`, etc.
-- Swap quotes: `getRaydiumQuote`, `getICPDexQuote`, `getSuiSwapQuote`, etc.
-- Developer registration: `registerDeveloperCanister`
-- Gateway queries: `getMyGatewayAccount`, `getMyDeveloperAccount`
+Each call uses one action of the plan or none. The [API reference](docs/api/README.md) gives it per method, read
+from the live gateway.
+
+- No action, for example: `getMySolanaAddress`, `getMyEvmAddress`, `getRaydiumQuote`, `getSuiSwapQuote`,
+  `registerDeveloperCanister`, `getMyGatewayAccount`, `getMyDeveloperAccount`, `getGatewayPricing`.
+- One action: every send, swap and signing, and also `getAllAddresses`, `getAllBalances`, `getMyBitcoinAddress`,
+  `getMySolanaBalance` and `getICPDexQuote`.
 
 ## Developer Packages
 
