@@ -1,0 +1,2475 @@
+type XrpAddressInfo = 
+ record {
+   accountIdBytes: vec nat8;
+   accountIdHex: text;
+   classicAddress: text;
+   publicKeyHex: text;
+ };
+type WrapResult = 
+ record {
+   approvalTxHash: opt text;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   stEthWrapped: nat;
+   txHash: text;
+ };
+type WithdrawTokenResult = 
+ record {
+   amountWithdrawn: nat;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   tokenAddress: text;
+   txHash: text;
+ };
+type WithdrawEthResult = 
+ record {
+   approvalTxHash: opt text;
+   ethWithdrawn: nat;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   txHash: text;
+ };
+type WalletBalance = 
+ record {
+   lovelace: nat64;
+   tokens: vec TokenBalance;
+ };
+type VolatilityConfig = 
+ record {
+   action: VolatilityAction;
+   cooldownMinutes: nat;
+   direction: variant {
+                Above;
+                Below;
+              };
+   lastTriggered: int;
+   tokenSymbol: text;
+   triggerStdDev: float64;
+ };
+type VolatilityAction = 
+ variant {
+   Alert;
+   Buy: record {amountUSD: nat;};
+   ExitLP: record {poolAddress: text;};
+   Sell: record {percentage: nat;};
+ };
+type UserAccount = 
+ record {
+   actionsRemaining: nat;
+   actionsUsed: nat;
+   createdAt: int;
+   creditsMicroUsd: nat;
+   subscriptionExpiry: opt int;
+   tier: Tier;
+   totalDepositedMicroUsd: nat;
+ };
+type UnwrapResult = 
+ record {
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   txHash: text;
+   wstEthUnwrapped: nat;
+ };
+type UTXO__1 = 
+ record {
+   outputIndex: nat32;
+   scriptPubKey: vec nat8;
+   txHash: text;
+   value: nat64;
+ };
+type UTXO = 
+ record {
+   scriptPubKey: vec nat8;
+   txid: text;
+   value: nat64;
+   vout: nat32;
+ };
+type TrustSetResult = 
+ record {
+   explorerUrl: text;
+   message: text;
+   success: bool;
+   txHash: text;
+ };
+type TronAddressInfo = 
+ record {
+   base58Address: text;
+   hexAddress: text;
+   publicKeyHex: text;
+ };
+type TransformArgs = 
+ record {
+   context: blob;
+   response: HttpResponse;
+ };
+type TransferFromResult = 
+ record {
+   amount: nat;
+   blockHeight: nat;
+   from: principal;
+   to: principal;
+   token: text;
+ };
+type TransferAndSendResult = 
+ record {
+   blockhash: text;
+   serializedTxBase64: text;
+   txSignature: text;
+ };
+type TransactionReceipt = 
+ record {
+   blockNumber: text;
+   gasUsed: text;
+   status: nat;
+ };
+type TonAddressInfo = 
+ record {
+   bounceable: text;
+   nonBounceable: text;
+   publicKeyHex: text;
+   rawAddress: text;
+   stateInitBocBase64: text;
+ };
+type TokenStandard = 
+ variant {
+   DIP20;
+   ICRC1;
+   ICRC2;
+ };
+type TokenInfo__1 = 
+ record {
+   canisterId: text;
+   decimals: nat8;
+   fee: nat;
+   name: text;
+   symbol: text;
+ };
+type TokenInfo = 
+ record {
+   address: text;
+   decimals: nat;
+   symbol: text;
+ };
+type TokenConfig = 
+ record {
+   decimals: nat;
+   fixedRateMicroUsd: opt nat;
+   ledgerCanisterId: text;
+   symbol: text;
+   xrcSymbol: opt text;
+ };
+type TokenBalance = 
+ record {
+   quantity: text;
+   unit: text;
+ };
+type TokenAmount = 
+ record {
+   currency: text;
+   issuer: text;
+   value: text;
+ };
+type Tier = 
+ variant {
+   Basic;
+   Developer;
+   Enterprise;
+   Free;
+   Pro;
+ };
+type SwapResult__3 = 
+ record {
+   amountIn: nat;
+   amountOut: nat;
+   dex: DexId;
+   fee: nat;
+   message: text;
+   success: bool;
+   txId: nat;
+ };
+type SwapResult__2 = 
+ record {
+   amountOut: text;
+   error: opt text;
+   success: bool;
+   txDigest: text;
+ };
+type SwapResult__1 = 
+ record {
+   amountIn: nat;
+   approvalTxHash: opt text;
+   expectedTxHash: text;
+   isDirect: bool;
+   minAmountOut: nat;
+   nonce: nat;
+   note: text;
+   path: vec text;
+   pathSymbols: vec text;
+   senderAddress: text;
+ };
+type SwapResult = 
+ record {
+   destinationAmount: text;
+   explorerUrl: text;
+   message: text;
+   sourceAmount: text;
+   success: bool;
+   txHash: text;
+ };
+type SwapRequest = 
+ record {
+   amountIn: nat;
+   minAmountOut: nat;
+   preferredDex: opt DexId;
+   slippagePct: float64;
+   tokenIn: text;
+   tokenOut: text;
+ };
+type SwapQuote__1 = 
+ record {
+   amountIn: nat;
+   amountOut: nat;
+   dex: DexId;
+   fee: nat;
+   minAmountOut: nat;
+   poolId: opt text;
+   priceImpactPct: text;
+   rawData: text;
+   route: vec text;
+   success: bool;
+   tokenIn: text;
+   tokenOut: text;
+ };
+type SwapQuote = 
+ record {
+   amountIn: text;
+   amountOut: text;
+   estimatedGas: nat64;
+   priceImpact: float64;
+   routerData: text;
+ };
+type SupplyTokenResult = 
+ record {
+   amountSupplied: nat;
+   approvalTxHash: opt text;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   tokenAddress: text;
+   txHash: text;
+ };
+type SupplyEthResult = 
+ record {
+   ethSupplied: nat;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   txHash: text;
+ };
+type SuiAddressInfo = 
+ record {
+   publicKeyBytes: vec nat8;
+   publicKeyHex: text;
+   suiAddress: text;
+ };
+type StakeResult = 
+ record {
+   ethStaked: nat;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+   txHash: text;
+ };
+type SolanaTokenTransferAccounts = 
+ record {
+   destAta: text;
+   destOwner: text;
+   mint: text;
+   signerAddress: text;
+   sourceAta: text;
+   tokenProgramId: text;
+ };
+type SolanaTokenTransferAccountInspection = 
+ record {
+   destAtaMatches: bool;
+   destOwner: text;
+   expectedDestAta: text;
+   expectedSourceAta: text;
+   mint: text;
+   passedDestAta: text;
+   passedSourceAta: text;
+   signerAddress: text;
+   sourceAtaMatches: bool;
+   tokenProgramId: text;
+ };
+type SolanaAddressInfo = 
+ record {
+   address: text;
+   publicKeyBytes: vec nat8;
+   publicKeyHex: text;
+ };
+type Snapshot = 
+ record {
+   bufferedFeeWei: nat;
+   bufferedGasPriceWei: nat;
+   caller: principal;
+   chainId: opt nat;
+   estimatedFeeWei: nat;
+   expiresAtNs: int;
+   fetchedAtNs: int;
+   gasLimit: nat;
+   gasPriceWei: nat;
+   op: OperationType;
+   quoteId: text;
+   rpcEndpoint: text;
+   tier: GasTier;
+   tierLabel: text;
+   valueWei: nat;
+ };
+type SignedTxResult = 
+ record {
+   message: text;
+   signedTxHex: text;
+   success: bool;
+   txHash: text;
+ };
+type SignedTronTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   txHex1b: text;
+   txHex1c: text;
+   txID: text;
+ };
+type SignedTronResult = 
+ record {
+   note: text;
+   transaction: SignedTronTx;
+ };
+type SignedTonTx = 
+ record {
+   bocBase64: text;
+   payloadHash: text;
+   purpose: text;
+   senderAddress: text;
+ };
+type SignedTonResult = 
+ record {
+   note: text;
+   transaction: SignedTonTx;
+ };
+type SignedThorTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   signedTxJson: text;
+   txHash: text;
+ };
+type SignedThorResult = 
+ record {
+   note: text;
+   transaction: SignedThorTx;
+ };
+type SignedSuiTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   signatureBase64: text;
+   txBytesBase64: text;
+ };
+type SignedSuiResult = 
+ record {
+   note: text;
+   transaction: SignedSuiTx;
+ };
+type SignedSolTx = 
+ record {
+   purpose: text;
+   signatureBase58: text;
+   signedTxBase64: text;
+   signerAddress: text;
+ };
+type SignedSolTokenTransferTx = 
+ record {
+   destAta: text;
+   destOwner: text;
+   mint: text;
+   purpose: text;
+   signatureBase58: text;
+   signedTxBase64: text;
+   signerAddress: text;
+   sourceAta: text;
+   tokenProgramId: text;
+ };
+type SignedSolResult = 
+ record {
+   note: text;
+   transactions: vec SignedSolTx;
+ };
+type SignedNearTx = 
+ record {
+   purpose: text;
+   senderAccountId: text;
+   signedTxBytes: vec nat8;
+   txHash: text;
+ };
+type SignedNearResult = 
+ record {
+   note: text;
+   transaction: SignedNearTx;
+ };
+type SignedMinswapTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   txBodyHashHex: text;
+   unsignedCborHex: text;
+   witnessSetHex: text;
+ };
+type SignedMinswapResult = 
+ record {
+   note: text;
+   transaction: SignedMinswapTx;
+ };
+type SignedEvmTx = 
+ record {
+   nonce: nat;
+   purpose: text;
+   senderAddress: text;
+   signedTxHexV0: text;
+   signedTxHexV1: text;
+   txHash: text;
+ };
+type SignedEvmResult = 
+ record {
+   chainId: nat;
+   note: text;
+   transactions: vec SignedEvmTx;
+ };
+type SignedCloakTx = 
+ record {
+   fee: nat64;
+   purpose: text;
+   senderAddress: text;
+   signedTxHex: text;
+   txid: text;
+ };
+type SignedCloakResult = 
+ record {
+   note: text;
+   transaction: SignedCloakTx;
+ };
+type SignedCardanoTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   signedTxCborHex: text;
+   txHash: text;
+ };
+type SignedCardanoResult = 
+ record {
+   note: text;
+   transaction: SignedCardanoTx;
+ };
+type SignedBtcTx = 
+ record {
+   fee: nat64;
+   purpose: text;
+   senderAddress: text;
+   signedTxHex: text;
+   txid: text;
+ };
+type SignedBtcResult = 
+ record {
+   note: text;
+   transaction: SignedBtcTx;
+ };
+type SignedAptosTx = 
+ record {
+   purpose: text;
+   senderAddress: text;
+   signedTxBcs: vec nat8;
+   txHash: text;
+ };
+type SignedAptosResult = 
+ record {
+   note: text;
+   transaction: SignedAptosTx;
+ };
+type SendResult__5 = 
+ record {
+   amount: nat64;
+   fee: nat64;
+   note: text;
+   recipientAddress: text;
+   senderAddress: text;
+   txid: text;
+ };
+type SendResult__4 = 
+ record {
+   changeValue: nat64;
+   txHash: text;
+   txHex: text;
+ };
+type SendResult__3 = 
+ record {
+   expectedTxHash: text;
+   nonce: nat;
+   note: text;
+   senderAddress: text;
+ };
+type SendResult__2 = 
+ record {
+   bocBase64: text;
+   error: opt text;
+   senderAddress: text;
+   success: bool;
+   txHash: text;
+ };
+type SendResult__1 = 
+ record {
+   explorerUrl: text;
+   ledgerUsed: nat32;
+   message: text;
+   sequence: nat32;
+   success: bool;
+   txHash: text;
+ };
+type SendResult = 
+ record {
+   note: text;
+   senderAddress: text;
+   txHash: text;
+ };
+type SendICRC1Result = 
+ record {
+   amount: nat;
+   blockHeight: nat;
+   fee: nat;
+   to: principal;
+   token: text;
+ };
+type SendICPResult = 
+ record {
+   amount: nat64;
+   blockHeight: nat64;
+   fee: nat64;
+   from: principal;
+   to: principal;
+ };
+type ScheduledConfig = 
+ record {
+   action: ScheduledAction;
+   cronPattern: text;
+   executedCount: nat;
+   nextExecutionTime: int;
+   repeatCount: nat;
+ };
+type ScheduledAction = 
+ variant {
+   AddLP: record {
+            amountUSD: nat;
+            poolAddress: text;
+          };
+   Custom: text;
+   RemoveLP: record {
+               percentage: nat;
+               poolAddress: text;
+             };
+   Swap: record {
+           amountIn: nat;
+           tokenIn: text;
+           tokenOut: text;
+         };
+ };
+type RuleType = 
+ variant {
+   APYMigration;
+   DCA;
+   LiquidityProvision;
+   Rebalance;
+   Scheduled;
+   StopLoss;
+   TakeProfit;
+   VolatilityTrigger;
+ };
+type RuleStatus = 
+ variant {
+   Active;
+   Cancelled;
+   Confirmed;
+   Draft;
+   Executed;
+   Executing;
+   Failed;
+   Paused;
+   Ready;
+ };
+type Rule = 
+ record {
+   apyMigrationConfig: opt APYMigrationConfig;
+   chainType: ChainType;
+   createdAt: int;
+   dcaConfig: opt DCAConfig;
+   id: nat;
+   lpConfig: opt LPConfig;
+   positionId: nat;
+   ruleType: RuleType;
+   scheduledConfig: opt ScheduledConfig;
+   sizePct: nat;
+   status: RuleStatus;
+   swapAmountLamports: opt nat64;
+   swapAmountWei: opt nat;
+   triggerPrice: nat64;
+   volatilityConfig: opt VolatilityConfig;
+ };
+type RevenueStats = 
+ record {
+   activePaidUsers: nat;
+   activeSubscriptions: nat;
+   totalDeposits: nat;
+   totalOperationsCharged: nat;
+   totalRevenueMicroUsd: nat;
+ };
+type Result__5_2 = 
+ variant {
+   err: text;
+   ok: WalletBalance;
+ };
+type Result__5_1 = 
+ variant {
+   err: text;
+   ok: MinswapEstimateResponse;
+ };
+type Result__1_9 = 
+ variant {
+   err: text;
+   ok: SwapResult__1;
+ };
+type Result__1_8 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      approvalTxHash: opt text;
+      expectedTxHash: text;
+      minETHOut: nat;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+      usdcIn: nat;
+    };
+ };
+type Result__1_77 = 
+ variant {
+   err: text;
+   ok: SupplyEthResult;
+ };
+type Result__1_76 = 
+ variant {
+   err: text;
+   ok: SupplyTokenResult;
+ };
+type Result__1_75 = 
+ variant {
+   err: text;
+   ok: WithdrawEthResult;
+ };
+type Result__1_74 = 
+ variant {
+   err: text;
+   ok: WithdrawTokenResult;
+ };
+type Result__1_73 = 
+ variant {
+   err: text;
+   ok: AddLiquidityResult;
+ };
+type Result__1_72 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      amountADesired: nat;
+      amountAMin: nat;
+      amountBDesired: nat;
+      amountBMin: nat;
+      approvalTxHashA: opt text;
+      approvalTxHashB: opt text;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+      tokenA: text;
+      tokenB: text;
+      txHash: text;
+    };
+ };
+type Result__1_71 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      amountETHDesired: nat;
+      amountETHMin: nat;
+      amountTokenDesired: nat;
+      amountTokenMin: nat;
+      approvalTxHash: opt text;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+      tokenAddress: text;
+      txHash: text;
+    };
+ };
+type Result__1_70 = 
+ variant {
+   err: text;
+   ok: vec record {
+             principal;
+             UserAccount;
+           };
+ };
+type Result__1_7 = 
+ variant {
+   err: text;
+   ok: TransferFromResult;
+ };
+type Result__1_69 = 
+ variant {
+   err: text;
+   ok: vec DepositRecord;
+ };
+type Result__1_68 = 
+ variant {
+   err: text;
+   ok: vec record {
+             principal;
+             vec Rule;
+           };
+ };
+type Result__1_67 = 
+ variant {
+   err: text;
+   ok: vec record {
+             principal;
+             principal;
+           };
+ };
+type Result__1_66 = 
+ variant {
+   err: text;
+   ok: ApproveResult;
+ };
+type Result__1_65 = 
+ variant {
+   err: text;
+   ok: CreateAtaResult;
+ };
+type Result__1_64 = 
+ variant {
+   err: text;
+   ok: DepositRecord;
+ };
+type Result__1_63 = 
+ variant {
+   err: text;
+   ok: SwapResult__3;
+ };
+type Result__1_62 = 
+ variant {
+   err: text;
+   ok: SolanaTokenTransferAccounts;
+ };
+type Result__1_61 = 
+ variant {
+   err: text;
+   ok: SolanaTokenTransferAccountInspection;
+ };
+type Result__1_60 = 
+ variant {
+   err: text;
+   ok: SignedAptosResult;
+ };
+type Result__1_6 = 
+ variant {
+   err: text;
+   ok: SendResult;
+ };
+type Result__1_59 = 
+ variant {
+   err: text;
+   ok: SignedCardanoResult;
+ };
+type Result__1_58 = 
+ variant {
+   err: text;
+   ok: SignedCloakResult;
+ };
+type Result__1_57 = 
+ variant {
+   err: text;
+   ok: SignedEvmTx;
+ };
+type Result__1_56 = 
+ variant {
+   err: text;
+   ok: SignedBtcResult;
+ };
+type Result__1_55 = 
+ variant {
+   err: text;
+   ok: SignedMinswapResult;
+ };
+type Result__1_54 = 
+ variant {
+   err: text;
+   ok: SignedNearResult;
+ };
+type Result__1_53 = 
+ variant {
+   err: text;
+   ok: SignedSolResult;
+ };
+type Result__1_52 = 
+ variant {
+   err: text;
+   ok: SignedEvmResult;
+ };
+type Result__1_51 = 
+ variant {
+   err: text;
+   ok: SignedSolTx;
+ };
+type Result__1_50 = 
+ variant {
+   err: text;
+   ok: SignedSolTokenTransferTx;
+ };
+type Result__1_5 = 
+ variant {
+   err: text;
+   ok: UnwrapResult;
+ };
+type Result__1_49 = 
+ variant {
+   err: text;
+   ok: SignedSuiResult;
+ };
+type Result__1_48 = 
+ variant {
+   err: text;
+   ok: SignedThorResult;
+ };
+type Result__1_47 = 
+ variant {
+   err: text;
+   ok: SignedTonResult;
+ };
+type Result__1_46 = 
+ variant {
+   err: text;
+   ok: SignedTronResult;
+ };
+type Result__1_44 = 
+ variant {
+   err: text;
+   ok: BalanceInfo;
+ };
+type Result__1_43 = 
+ variant {
+   err: text;
+   ok: vec UTXO__1;
+ };
+type Result__1_42 = 
+ variant {
+   err: text;
+   ok: record {
+         ethOut: nat;
+         priceImpact: text;
+         usdcIn: nat;
+       };
+ };
+type Result__1_41 = 
+ variant {
+   err: text;
+   ok: RevenueStats;
+ };
+type Result__1_40 = 
+ variant {
+   err: text;
+   ok: TokenInfo__1;
+ };
+type Result__1_4 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result__1_39 = 
+ variant {
+   err: text;
+   ok: Allowance;
+ };
+type Result__1_38 = 
+ variant {
+   err: text;
+   ok: record {
+         fee: nat64;
+         maxAmount: nat64;
+         utxoCount: nat;
+       };
+ };
+type Result__1_37 = 
+ variant {
+   err: text;
+   ok: CanisterUsage;
+ };
+type Result__1_36 = 
+ variant {
+   err: text;
+   ok: record {
+         pairAddress: text;
+         tokenA: text;
+         tokenB: text;
+       };
+ };
+type Result__1_35 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      blockTimestampLast: nat;
+      pairAddress: text;
+      reserve0: nat;
+      reserve1: nat;
+      token0: text;
+      token1: text;
+    };
+ };
+type Result__1_34 = 
+ variant {
+   err: text;
+   ok: vec principal;
+ };
+type Result__1_33 = 
+ variant {
+   err: text;
+   ok: vec PathSuggestion;
+ };
+type Result__1_32 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      amountIn: nat;
+      amountOut: nat;
+      fromToken: text;
+      path: vec text;
+      toToken: text;
+    };
+ };
+type Result__1_31 = 
+ variant {
+   err: text;
+   ok: QuoteResult;
+ };
+type Result__1_30 = 
+ variant {
+   err: text;
+   ok: nat64;
+ };
+type Result__1_3 = 
+ variant {
+   err: text;
+   ok: record {
+         isDirect: bool;
+         note: text;
+         path: vec text;
+         symbols: vec text;
+       };
+ };
+type Result__1_29 = 
+ variant {
+   err: text;
+   ok: record {
+         ethIn: nat;
+         priceImpact: text;
+         usdcOut: nat;
+       };
+ };
+type Result__1_28 = 
+ variant {
+   err: text;
+   ok: record {
+         expectedDepositId: nat;
+         txSignature: text;
+       };
+ };
+type Result__1_27 = 
+ variant {
+   err: text;
+   ok: record {
+         depositId: nat;
+         txSignature: text;
+       };
+ };
+type Result__1_26 = 
+ variant {
+   err: text;
+   ok: Snapshot;
+ };
+type Result__1_25 = 
+ variant {
+   err: text;
+   ok: record {
+         bufferedGasPriceWei: nat;
+         gasPriceWei: nat;
+       };
+ };
+type Result__1_24 = 
+ variant {
+   err: text;
+   ok: UserAccount;
+ };
+type Result__1_23 = 
+ variant {
+   err: text;
+   ok: RemoveLiquidityResult;
+ };
+type Result__1_22 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      approvalTxHash: opt text;
+      lpTokensBurned: nat;
+      minAmountAOut: nat;
+      minAmountBOut: nat;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+      tokenA: text;
+      tokenB: text;
+      txHash: text;
+    };
+ };
+type Result__1_21 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      approvalTxHash: opt text;
+      lpTokensBurned: nat;
+      minETHOut: nat;
+      minTokenOut: nat;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+      tokenAddress: text;
+      txHash: text;
+    };
+ };
+type Result__1_20 = 
+ variant {
+   err: text;
+   ok: SendResult__5;
+ };
+type Result__1_19 = 
+ variant {
+   err: text;
+   ok: SendResult__4;
+ };
+type Result__1_18 = 
+ variant {
+   err: text;
+   ok: SendResult__3;
+ };
+type Result__1_17 = 
+ variant {
+   err: text;
+   ok: SendICPResult;
+ };
+type Result__1_16 = 
+ variant {
+   err: text;
+   ok: SendICRC1Result;
+ };
+type Result__1_14 = 
+ variant {
+   err: text;
+   ok: record {
+         note: text;
+         senderAddress: text;
+         txHash: text;
+       };
+ };
+type Result__1_13 = 
+ variant {
+   err: text;
+   ok: record {
+         senderAddress: text;
+         txHex1b: text;
+         txHex1c: text;
+         txID: text;
+       };
+ };
+type Result__1_12 = 
+ variant {
+   err: text;
+   ok: StakeResult;
+ };
+type Result__1_11 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      ethIn: nat;
+      expectedTxHash: text;
+      minUSDCOut: nat;
+      nonce: nat;
+      note: text;
+      senderAddress: text;
+    };
+ };
+type Result__1_10 = 
+ variant {
+   err: text;
+   ok:
+    record {
+      amountIn: nat;
+      approvalTxHash: opt text;
+      expectedTxHash: text;
+      minAmountOut: nat;
+      nonce: nat;
+      note: text;
+      path: vec text;
+      senderAddress: text;
+    };
+ };
+type Result__1_1 = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+type Result__1 = 
+ variant {
+   err: text;
+   ok: WrapResult;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type RemoveLiquidityResult = 
+ record {
+   message: text;
+   success: bool;
+   token0Received: nat;
+   token1Received: nat;
+ };
+type RemoveLiquidityRequest = 
+ record {
+   dex: DexId;
+   lpTokens: nat;
+   poolId: text;
+   slippagePct: float64;
+ };
+type RebalanceRecommendation = 
+ record {
+   action: RebalanceAction;
+   amount: nat;
+   confidence: float64;
+   currentApy: opt float64;
+   estimatedApy: opt float64;
+   estimatedGasUsd: opt float64;
+   fromSymbol: text;
+   fromToken: text;
+   id: text;
+   impermanentLossRisk: ImpermanentLossRisk;
+   reason: text;
+   toSymbol: text;
+   toToken: text;
+ };
+type RebalancePreferences = 
+ record {
+   autoCompound: bool;
+   maxImpermanentLoss: opt float64;
+   minApy: opt float64;
+   riskTolerance: text;
+   targetCategories: vec text;
+ };
+type RebalanceAction = 
+ variant {
+   AddLiquidity;
+   Compound;
+   RemoveLiquidity;
+   Swap;
+ };
+type RaydiumQuoteResponse = 
+ record {
+   inputAmount: text;
+   minOutputAmount: text;
+   outputAmount: text;
+   priceImpactPct: text;
+   routeInfo: text;
+   success: bool;
+ };
+type RaydiumDiagnostics = 
+ record {
+   blockhashB58: text;
+   expectedLen: nat;
+   messageBase64: text;
+   messageHex: text;
+   messageLen: nat;
+   parsed: text;
+   signedTxBase64: text;
+ };
+type RaydiumApiSwapResult = 
+ record {
+   inputAmount: text;
+   outputAmount: text;
+   priceImpactPct: text;
+   txSignature: text;
+ };
+type QuoteResult = 
+ record {
+   amountIn: nat;
+   amountOut: nat;
+   fromToken: text;
+   isDirect: bool;
+   path: vec text;
+   pathSymbols: vec text;
+   routeNote: text;
+   toToken: text;
+ };
+type PubKeyInfo = 
+ record {
+   implicitAccountId: text;
+   publicKeyBase58: text;
+   publicKeyHex: text;
+ };
+type PoolLiquidity = 
+ variant {
+   High;
+   Low;
+   Medium;
+ };
+type PoolInfo__1 = 
+ record {
+   apr: opt float64;
+   dex: DexId;
+   fee: nat;
+   poolId: text;
+   reserve0: nat;
+   reserve1: nat;
+   token0: text;
+   token0Symbol: text;
+   token1: text;
+   token1Symbol: text;
+   tvl: opt nat;
+   volume24h: opt nat;
+ };
+type PoolInfo = 
+ record {
+   liquidityLevel: PoolLiquidity;
+   pairAddress: opt text;
+   symbolA: text;
+   symbolB: text;
+   tokenA: text;
+   tokenB: text;
+ };
+type PathSuggestion = 
+ record {
+   intermediary: text;
+   reason: text;
+   symbol: text;
+ };
+type PathFindResult = 
+ record {
+   destinationAmount: TokenAmount;
+   message: text;
+   paths: text;
+   sourceAmount: TokenAmount;
+   success: bool;
+ };
+type PackagePricing = 
+ record {
+   actionsIncluded: nat;
+   durationNanos: int;
+   priceMicroUsd: nat;
+   tier: Tier;
+ };
+type PackageConfig = 
+ record {
+   moduleName: text;
+   packageId: text;
+   treasuryCapId: text;
+ };
+type Owed = 
+ record {
+   amount: nat;
+   pool: text;
+   stage: variant {
+            poolBalance;
+            poolSubaccount;
+          };
+   token: text;
+ };
+type OperationType = 
+ variant {
+   AddLiquidity;
+   Approve;
+   ContractWrite;
+   EthTransfer;
+   RemoveLiquidity;
+   Swap;
+ };
+type OpType = 
+ variant {
+   admin;
+   bridge;
+   bridgeRelay;
+   sign;
+   signRelay;
+   swap;
+   swapRelay;
+ };
+type Network__1 = 
+ variant {
+   mainnet;
+   regtest;
+   testnet;
+ };
+type Network = 
+ variant {
+   devnet;
+   mainnet;
+   testnet;
+ };
+type NativeSwapResult = 
+ record {
+   blockhash: text;
+   messageHex: text;
+   serializedTxBase64: text;
+   txSignature: text;
+ };
+type MinswapTokenConfig = 
+ record {
+   category: text;
+   decimals: nat;
+   id: text;
+   isVerified: bool;
+   logoUrl: opt text;
+   name: text;
+   symbol: text;
+ };
+type MinswapEstimateResponse = 
+ record {
+   aggregator_fee: text;
+   amount_in: text;
+   amount_out: text;
+   avg_price_impact: text;
+   min_amount_out: text;
+   paths_json: text;
+   rawJson: text;
+   success: bool;
+   token_in: text;
+   token_out: text;
+   total_dex_fee: text;
+   total_lp_fee: text;
+ };
+type LockResult = 
+ record {
+   blockhash: text;
+   icrcBlockIndex: opt nat;
+   icrcMinted: bool;
+   message: text;
+   serializedTxBase64: text;
+   txSignature: text;
+ };
+type LPPosition = 
+ record {
+   dex: DexId;
+   liquidity: nat;
+   poolId: text;
+   token0: text;
+   token0Amount: nat;
+   token0Symbol: text;
+   token1: text;
+   token1Amount: nat;
+   token1Symbol: text;
+   unclaimedFees: opt record {
+                        nat;
+                        nat;
+                      };
+   valueUsd: opt nat;
+ };
+type LPConfig = 
+ record {
+   cooldownHours: nat;
+   exitOnHighVolatility: bool;
+   maxPositionSizePct: float64;
+   maxVolatility: float64;
+   minApy: float64;
+   minTvlUSD: float64;
+   poolAddress: text;
+   rebalanceThreshold: float64;
+ };
+type ImpermanentLossRisk = 
+ variant {
+   High;
+   Low;
+   Medium;
+ };
+type HttpResponse = 
+ record {
+   body: blob;
+   headers: vec HttpHeader;
+   status: nat;
+ };
+type HttpHeader = 
+ record {
+   name: text;
+   value: text;
+ };
+type GasTier = 
+ variant {
+   High;
+   Low;
+   Medium;
+ };
+type FeeEntry = 
+ record {
+   microUsd: nat;
+   opType: OpType;
+ };
+type ExecutionStage = 
+ variant {
+   ACTIVATED;
+   ADDRESS_GENERATED;
+   BROADCASTING;
+   BUILT_TX;
+   CHECKED;
+   CONFIG_UPDATED;
+   CONFIRMED;
+   DCA_EXECUTED;
+   EXECUTING;
+   FAILED;
+   PNL_REPORTED;
+   POSITION_CREATED;
+   RULE_CREATED;
+   SENT;
+   SIGNING;
+   TRIGGERED;
+   VALIDATED;
+ };
+type ExecutionLog = 
+ record {
+   error: opt text;
+   intent_hash: text;
+   rule_id: text;
+   stage: ExecutionStage;
+   ts: int;
+   tx_id: opt text;
+ };
+type EvmAddressInfo = 
+ record {
+   evmAddress: text;
+   publicKeyHex: text;
+ };
+type DexToken = 
+ record {
+   availableOn: vec DexId;
+   canisterId: text;
+   category: opt text;
+   decimals: nat8;
+   fee: nat;
+   logo: opt text;
+   name: text;
+   standard: TokenStandard;
+   symbol: text;
+ };
+type DexId = 
+ variant {
+   ICPSwap;
+   KongSwap;
+ };
+type DeveloperAccountV3 = 
+ record {
+   appName: text;
+   canisters: vec principal;
+   createdAt: int;
+   developerKey: text;
+   owner: principal;
+ };
+type DepositRecord = 
+ record {
+   amount: nat;
+   currency: text;
+   id: nat;
+   ledgerCanisterId: text;
+   timestamp: int;
+   usdValueMicroUsd: nat;
+   user: principal;
+ };
+type DCAConfig = 
+ record {
+   amountPerBuy: nat;
+   executedBuys: nat;
+   intervalSeconds: nat;
+   nextExecutionTime: int;
+   tokenIn: text;
+   tokenOut: text;
+   totalBuys: nat;
+ };
+type CreateAtaResult = 
+ record {
+   ata: text;
+   blockhash: text;
+   mint: text;
+   owner: text;
+   txSignature: text;
+ };
+type CoinData = 
+ record {
+   balance: nat64;
+   digest: text;
+   objectId: text;
+   version: nat64;
+ };
+type CloakAddressInfo = 
+ record {
+   addressBytesHex: text;
+   base58Address: text;
+   hash160Hex: text;
+   pubKeyHex: text;
+ };
+type ClmmSwapResult = 
+ record {
+   outputAmount: text;
+   priceImpactPct: text;
+   txSignature: text;
+ };
+type ClmmSwapQuote = 
+ record {
+   inputAmount: text;
+   otherAmountThreshold: text;
+   outputAmount: text;
+   priceImpactPct: text;
+   rawJson: text;
+   success: bool;
+ };
+type ClmmPoolId = 
+ variant {
+   CRCLX_USDC;
+   CRCLX_WSOL;
+   GOOGLX_USDC;
+   QQQX_WSOL;
+   TSLAX_USDC;
+   TSLAX_WSOL;
+   USD1_USDC;
+ };
+type ClmmPoolConfig = 
+ record {
+   decimalsA: nat;
+   decimalsB: nat;
+   id: text;
+   mintA: text;
+   mintB: text;
+   poolAddress: text;
+   symbol: text;
+ };
+type ChainType = 
+ variant {
+   Evm;
+   Solana;
+ };
+type ChainStats = 
+ record {
+   blockchain: text;
+   totalOperations: nat;
+   uniqueUsers: nat;
+ };
+type CardanoAddressInfo = 
+ record {
+   addressBytesHex: text;
+   bech32Address: text;
+   paymentPubKeyHex: text;
+   stakePubKeyHex: text;
+ };
+type CanisterUsage = 
+ record {
+   canisterId: principal;
+   lastUsed: int;
+   operationsCharged: nat;
+ };
+type BtcUtxoInput = 
+ record {
+   txHash: text;
+   txIndex: nat32;
+   value: nat64;
+ };
+type BalanceInfo = 
+ record {
+   address: text;
+   balance: nat64;
+   utxoCount: nat;
+ };
+type Balance = 
+ record {
+   amount: nat;
+   denom: text;
+ };
+type AptosAddressInfo = 
+ record {
+   address: text;
+   publicKeyHex: text;
+ };
+type ApproveResult = 
+ record {
+   amount: nat;
+   blockHeight: nat;
+   spender: principal;
+   token: text;
+ };
+type Allowance = 
+ record {
+   allowance: nat;
+   expires_at: opt nat64;
+ };
+type AggregatedQuote = 
+ record {
+   best: SwapQuote__1;
+   icpswapQuote: opt SwapQuote__1;
+   kongswapQuote: opt SwapQuote__1;
+   timestamp: int;
+ };
+type AddressInfo = 
+ record {
+   bech32Address: text;
+   hash160Hex: text;
+   pubKeyHex: text;
+ };
+type AddLiquidityResult = 
+ record {
+   lpTokens: nat;
+   message: text;
+   poolId: text;
+   success: bool;
+   token0Used: nat;
+   token1Used: nat;
+ };
+type AddLiquidityRequest = 
+ record {
+   dex: DexId;
+   poolId: text;
+   slippagePct: float64;
+   token0: text;
+   token0Amount: nat;
+   token1: text;
+   token1Amount: nat;
+ };
+type AccountInfo = 
+ record {
+   balance: nat64;
+   seqno: nat32;
+   state: text;
+ };
+type APYMigrationConfig = 
+ record {
+   cooldownHours: nat;
+   currentPoolAddress: text;
+   lastMigrated: int;
+   maxMigrationCostPct: float64;
+   minApyDelta: float64;
+   targetPools: vec text;
+ };
+service : {
+  aaveSupplyEth: (ethAmountWei: nat, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1_77);
+  aaveSupplyToken: (tokenAddress: text, amount: nat, rpcEndpoint: text,
+   quoteId: opt text) -> (Result__1_76);
+  aaveWithdrawEth: (amountWei: nat, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1_75);
+  aaveWithdrawToken: (tokenAddress: text, amount: nat, rpcEndpoint: text,
+   quoteId: opt text) -> (Result__1_74);
+  addGatewayPaymentToken: (config: TokenConfig) -> (Result__1_4);
+  addGatewayWhitelist: (p: principal) -> (Result__1_4);
+  addICPLiquidity: (_request: AddLiquidityRequest) -> (Result__1_73);
+  addLiquidity: (tokenASymbol: text, tokenBSymbol: text, amountADesired: 
+   nat, amountBDesired: nat, slippageBps: nat, rpcEndpoint: text, quoteId:
+   opt text) -> (Result__1_72);
+  addLiquidityETH: (tokenSymbol: text, amountTokenDesired: nat,
+   amountETHDesired: nat, slippageBps: nat, rpcEndpoint: text, quoteId:
+   opt text) -> (Result__1_71);
+  addStrategyRule: (rule: Rule) -> (Result__1_1);
+  adminClearDeveloperSessions: (devPrincipal: principal) -> (Result__1_1);
+  adminGetAccount: (user: principal) -> (Result__1_24);
+  adminGetAllAccounts: () -> (Result__1_70);
+  adminGetAllDeposits: () -> (Result__1_69);
+  adminGetAllRules: () -> (Result__1_68);
+  adminGetAllSessions: () -> (Result__1_67);
+  adminGrantSubscription: (user: principal, tier: Tier, actions: nat,
+   durationDays: nat) -> (Result__1_24);
+  adminPauseAllRules: () -> (Result__1_1);
+  approveICRC2: (spender: principal, amount: nat, expiresAt: opt nat64,
+   ledgerCanisterId: text) -> (Result__1_66);
+  buildAndSignEvmTransaction: (to: text, value: nat, nonce: nat, gasLimit:
+   nat, gasPrice: nat, chainId: nat) ->
+   (record {
+      rawTxHex_v0: text;
+      rawTxHex_v1: text;
+      signature: text;
+      txHash: text;
+    });
+  buildAndSignEvmTxWithData: (to: text, value: nat, data: vec nat8, nonce:
+   nat, gasLimit: nat, gasPrice: nat, chainId: nat) ->
+   (record {
+      rawTxHex_v0: text;
+      rawTxHex_v1: text;
+      signature: text;
+      txHash: text;
+    });
+  burnSuiTokens: (coinToBurnId: text, icpRecipient: principal, nonce:
+   nat64) -> (Result__1_6);
+  calculateSuiMinAmountOut: (amountOut: text, slippageBps: nat64) ->
+   (text) query;
+  callEvmContractRead: (contract: text, functionSelector: text, argsHexes:
+   vec text, rpcEndpoint: text) -> (Result);
+  callEvmContractWrite: (contract: text, functionSelector: text, argsHexes:
+   vec text, rpcEndpoint: text, chainId: nat, value: nat, quoteId:
+   opt text) -> (Result__1_18);
+  cleanupBitcoinReservations: () -> (nat);
+  cleanupLitecoinReservations: () -> (nat);
+  clearAllCaches: () -> ();
+  clearEvmCache: () -> ();
+  clearSolanaAddressCache: () -> (text);
+  clearStrategyPriceCache: () -> ();
+  clearSuiCache: () -> ();
+  clearTonCache: () -> ();
+  createCanisterSolanaAtaForMint: (mintBase58: text, ataBase58: text) ->
+   (CreateAtaResult);
+  createCanisterSolanaAtaForMintWithProgram: (mintBase58: text, ataBase58:
+   text, tokenProgramId: text) -> (CreateAtaResult);
+  createMyAta: (mintBase58: text, ataBase58: text) -> (Result__1_65);
+  createMySolanaAtaForMint: (mintBase58: text, ataBase58: text) ->
+   (CreateAtaResult);
+  createMySolanaAtaForMintWithProgram: (mintBase58: text, ataBase58: 
+   text, tokenProgramId: text) -> (CreateAtaResult);
+  debugGetMySolanaAta: (mint: text) ->
+   (record {
+      callerPrincipal: text;
+      derivedAta: text;
+      ownerAddress: text;
+      ownerHex: text;
+    });
+  debugPdaDerivation: (ownerB58: text, mintB58: text) ->
+   (record {
+      bump252Hash: text;
+      bump253Hash: text;
+      bump254Hash: text;
+      bump255Hash: text;
+      finalAta: text;
+      finalBump: nat8;
+    });
+  debugTokenProgram: (mint: text) ->
+   (record {
+      isLegacy: bool;
+      mint: text;
+      program: text;
+    }) query;
+  deleteStrategyRule: (ruleId: nat) -> (Result__1_4);
+  depositGatewayCredits: (tokenSymbol: text, amount: nat) -> (Result__1_64);
+  deriveSolanaAtaWithProgram: (ownerBase58: text, mintBase58: text,
+   tokenProgramId: text) -> (Result) query;
+  dumpSolanaBorshWriterBehavior: () -> (text);
+  estimateBitcoinFee: (inputCount: nat, outputCount: nat, feeRate:
+   opt nat64) -> (nat64);
+  executeICPDexSwap: (request: SwapRequest) -> (Result__1_63);
+  executeMinswapSwap: (tokenIn: text, tokenOut: text, amountIn: nat64,
+   slippagePct: float64) -> (Result);
+  executeSuiSwap: (network: Network, fromToken: text, toToken: text,
+   amountIn: text, minAmountOut: text) -> (SwapResult__2);
+  exp_deriveSolanaTokenTransferAccounts: (destOwner: text, mint: text,
+   tokenProgramId: text) -> (Result__1_62);
+  exp_inspectSolanaTokenTransferAccounts: (sourceAta: text, destAta: 
+   text, destOwner: text, mint: text, tokenProgramId: text) -> (Result__1_61);
+  exp_rollbackEvmNonce: (evmAddress: text, unusedNonce: nat) -> (Result__1_4);
+  exp_signAddLiquidity: (tokenASymbol: text, tokenBSymbol: text,
+   amountADesired: nat, amountBDesired: nat, slippageBps: nat, gasPrice: 
+   nat, gasLimit: nat, overrideNonce: opt nat, rpcEndpoint: text) ->
+   (Result__1_52);
+  exp_signAddLiquidityETH: (tokenSymbol: text, amountTokenDesired: nat,
+   amountETHDesired: nat, slippageBps: nat, gasPrice: nat, gasLimit: 
+   nat, overrideNonce: opt nat, rpcEndpoint: text) -> (Result__1_52);
+  exp_signAptosTransfer: (toAddress: text, amount: nat64, sequenceNumber:
+   nat64, chainId: nat8, expirationTimestampSecs: nat64) -> (Result__1_60);
+  exp_signBtcTransfer: (toAddress: text, amount: nat64, feeRate: nat64,
+   utxos: vec BtcUtxoInput) -> (Result__1_56);
+  exp_signCardanoSend: (toAddress: text, amountLovelace: nat64, utxos:
+   vec record {
+         tx_hash: text;
+         tx_index: nat64;
+         value: nat64;
+       }) -> (Result__1_59);
+  exp_signCardanoTokenSend: (toAddress: text, lovelaceToSend: nat64,
+   tokensToSend: vec record {
+                       quantity: nat64;
+                       unit: text;
+                     }, utxos:
+   vec
+    record {
+      lovelace: nat64;
+      tokens: vec record {
+                    quantity: text;
+                    unit: text;
+                  };
+      tx_hash: text;
+      tx_index: nat64;
+    }) -> (Result__1_59);
+  exp_signClmmSwapUser: (poolId: ClmmPoolId, amount: nat64, slippageBps:
+   nat64, zeroForOne: bool, inputAta: opt text, outputAta: opt text,
+   recentBlockhash: text) -> (Result__1_53);
+  exp_signCloakTransfer: (toAddress: text, amount: nat64, utxos:
+   vec BtcUtxoInput) -> (Result__1_58);
+  exp_signDirectSwapUser: (direction: text, amountIn: nat64,
+   minimumAmountOut: nat64, recentBlockhash: text) -> (Result__1_53);
+  exp_signEvmSend: (to: text, value: nat, chainId: nat, gasPrice: nat,
+   gasLimit: nat, data: vec nat8, overrideNonce: opt nat, rpcEndpoint:
+   text) -> (Result__1_57);
+  exp_signEvmSwap: (fromSymbol: text, toSymbol: text, amountIn: nat,
+   slippageBps: nat, useFeeOnTransfer: bool, gasPrice: nat, gasLimit: 
+   nat, overrideNonce: opt nat, rpcEndpoint: text) -> (Result__1_52);
+  exp_signLtcTransfer: (toAddress: text, amount: nat64, feeRate: nat64,
+   utxos: vec BtcUtxoInput) -> (Result__1_56);
+  exp_signMinswapSwap: (tokenIn: text, tokenOut: text, amountIn: nat64,
+   slippagePct: float64, estimateRawJson: text) -> (Result__1_55);
+  exp_signNearTransfer: (recipientId: text, amountYocto: nat, nonce: 
+   nat64, blockHash: vec nat8) -> (Result__1_54);
+  exp_signRaydiumSwap: (amountIn: nat64, minimumAmountOut: nat64,
+   userSourceAta: text, userDestAta: text, recentBlockhash: text) ->
+   (Result__1_51);
+  exp_signRaydiumSwapUser: (inputMint: text, outputMint: text, amount: 
+   nat64, slippageBps: nat64, wrapSol: bool, unwrapSol: bool, inputAta:
+   opt text, outputAta: opt text, recentBlockhash: text) -> (Result__1_53);
+  exp_signRemoveLiquidity: (tokenASymbol: text, tokenBSymbol: text,
+   lpTokenAmount: nat, amountAMin: nat, amountBMin: nat, gasPrice: nat,
+   gasLimit: nat, overrideNonce: opt nat, rpcEndpoint: text) ->
+   (Result__1_52);
+  exp_signRemoveLiquidityETH: (tokenSymbol: text, lpTokenAmount: nat,
+   amountTokenMin: nat, amountETHMin: nat, useFeeOnTransfer: bool, gasPrice:
+   nat, gasLimit: nat, overrideNonce: opt nat, rpcEndpoint: text) ->
+   (Result__1_52);
+  exp_signSolTransfer: (toAddress: text, lamports: nat64, recentBlockhash:
+   text) -> (Result__1_51);
+  exp_signSplTransfer: (amount: nat64, sourceAta: text, destAta: text,
+   tokenProgramId: text, recentBlockhash: text) -> (Result__1_51);
+  exp_signSplTransferSafeChecked: (amount: nat64, decimals: nat8, sourceAta:
+   text, destAta: text, destOwner: text, mint: text, tokenProgramId: 
+   text, recentBlockhash: text) -> (Result__1_50);
+  exp_signSplTransferSafeDerived: (amount: nat64, decimals: nat8, destOwner:
+   text, mint: text, tokenProgramId: text, recentBlockhash: text) ->
+   (Result__1_50);
+  exp_signSuiTransfer: (recipientAddress: text, amount: nat64, gasCoinId:
+   text, gasCoinVersion: nat64, gasCoinDigest: text) -> (Result__1_49);
+  exp_signThorTransfer: (toAddress: text, amount: nat, chainId: text,
+   accountNumber: nat64, sequence: nat64, memo: text) -> (Result__1_48);
+  exp_signTonTransfer: (toAddress: text, amountNanoton: nat64, seqno: 
+   nat32, bounce: bool, comment: opt text, timeoutSeconds: nat32,
+   accountState: text) -> (Result__1_47);
+  exp_signTronTransfer: (toAddress: text, amountSun: nat64, refBlockBytes:
+   vec nat8, refBlockHash: vec nat8, expiration: int64, timestamp: int64) ->
+   (Result__1_46);
+  exp_signXrpIOUPayment: (destAddress: text, currency: text, issuer: 
+   text, amount: text, sequence: nat32, lastLedgerSeq: nat32, fee: nat64,
+   destinationTag: opt nat32) -> (SignedTxResult);
+  exp_signXrpPayment: (destAddress: text, amountXrp: text, sequence: 
+   nat32, lastLedgerSeq: nat32, fee: nat64, destinationTag: opt nat32) ->
+   (SignedTxResult);
+  exp_signXrpSwap: (destinationAmount: TokenAmount, sendMaxAmount:
+   TokenAmount, sequence: nat32, lastLedgerSeq: nat32, fee: nat64) ->
+   (SignedTxResult);
+  exp_signXrpTrustline: (currency: text, issuer: text, limit: text, sequence:
+   nat32, lastLedgerSeq: nat32, fee: nat64) -> (SignedTxResult);
+  forceClearEvmNonceState: () -> ();
+  forceReleaseEvmNonceLock: () -> (bool);
+  forceSetEvmNonce: (nonce: nat) -> ();
+  formatSuiTokenType: (tokenType: text) -> (text) query;
+  getATokenBalance: (aTokenAddress: text, user: text, rpcEndpoint: text) ->
+   (Result__1_1);
+  getAWethBalance: (user: text, rpcEndpoint: text) -> (Result__1_1);
+  getAllAddresses: () ->
+   (record {
+      aptos: AptosAddressInfo;
+      bitcoin: AddressInfo;
+      cardano: CardanoAddressInfo;
+      evm: EvmAddressInfo;
+      litecoin: AddressInfo;
+      near: PubKeyInfo;
+      solana: SolanaAddressInfo;
+      sui: SuiAddressInfo;
+      thorchain: AddressInfo;
+      ton: TonAddressInfo;
+      tron: TronAddressInfo;
+      xrp: XrpAddressInfo;
+    });
+  getAllBalances: () ->
+   (record {
+      aptos: Result__1_30;
+      bitcoin: nat64;
+      cardano: Result__1_30;
+      icp: Result__1_30;
+      litecoin: nat64;
+      near: nat;
+      solana: Result__1_30;
+      thorchain: vec Balance;
+      ton: Result__1_30;
+      xrp: Result;
+    });
+  getAllMinswapTokens: () -> (vec MinswapTokenConfig) query;
+  getAllPools: () -> (vec PoolInfo) query;
+  getAptosBalance: () -> (Result__1_30);
+  getBaseTokens: () -> (vec text) query;
+  getBitcoinAddressFor: (user: principal) -> (AddressInfo);
+  getBitcoinBalance: () -> (nat64);
+  getBitcoinBalanceFor: (address: text) -> (nat64);
+  getBitcoinDustLimit: () -> (nat64) query;
+  getBitcoinFeePercentiles: () -> (vec nat64);
+  getBitcoinMaxSendAmount: (feeRate: opt nat64) -> (Result__1_38);
+  getBitcoinRecommendedFeeRate: () -> (nat64);
+  getBitcoinReservationCount: () -> (nat) query;
+  getBitcoinUTXOs: () -> (vec UTXO);
+  getBitcoinUTXOsFor: (address: text) -> (vec UTXO);
+  getCachedPrices: () ->
+   (vec record {
+          ageSeconds: int;
+          priceMicroUsd: nat64;
+          symbol: text;
+        }) query;
+  getCanisterBitcoinAddress: () -> (AddressInfo);
+  getCanisterCloakAddress: () -> (CloakAddressInfo);
+  getCanisterDeveloper: (canisterId: principal) -> (opt principal) query;
+  getCanisterEvmAddress: () -> (EvmAddressInfo);
+  getCanisterLitecoinAddress: () -> (AddressInfo);
+  getCanisterNearBalance: () -> (nat);
+  getCanisterNearPubKey: () -> (PubKeyInfo);
+  getCanisterSolanaAddress: () -> (SolanaAddressInfo);
+  getCanisterSuiAddress: () -> (SuiAddressInfo);
+  getCanisterTonAddress: () -> (TonAddressInfo);
+  getCanisterTronAddress: () -> (TronAddressInfo);
+  getCanisterXrpAddress: () -> (XrpAddressInfo);
+  getCardanoBalance: () -> (Result__1_30);
+  getCardanoWalletBalance: () -> (Result__5_2);
+  getChainStats: (blockchain: text) -> (ChainStats);
+  getClmmPool: (poolId: ClmmPoolId) -> (ClmmPoolConfig) query;
+  getClmmQuote: (poolId: ClmmPoolId, amount: nat64, slippageBps: nat64,
+   zeroForOne: bool) -> (ClmmSwapQuote);
+  getCloakAddressFor: (user: principal) -> (CloakAddressInfo);
+  getCloakBalance: () -> (Result__1_44);
+  getCloakBalanceFor: (address: text) -> (Result__1_44);
+  getCloakUTXOs: () -> (Result__1_43);
+  getETHQuote: (usdcAmount: nat, rpcEndpoint: text) -> (Result__1_42);
+  getEvmAddressFor: (user: principal) -> (EvmAddressInfo);
+  getEvmBalance: (address: text, rpcEndpoint: text) -> (opt nat);
+  getEvmCacheSize: () -> (nat) query;
+  getEvmNonceState: () ->
+   (opt
+     record {
+       cachedNonce: nat;
+       isLocked: bool;
+       lockAgeSeconds: int;
+       updatedAt: int;
+     });
+  getEvmTransactionReceipt: (txHash: text, rpcEndpoint: text) ->
+   (opt TransactionReceipt);
+  getGasOracleCacheSize: () -> (nat) query;
+  getGatewayPricing: () ->
+   (record {
+      acceptedTokens: vec TokenConfig;
+      fees: vec FeeEntry;
+      packages: vec PackagePricing;
+    }) query;
+  getGatewayRevenue: () -> (Result__1_41);
+  getICPBalance: () -> (Result__1_30);
+  getICPBalanceFor: ("principal": principal) -> (Result__1_30);
+  getICPDexPools: () -> (vec PoolInfo__1);
+  getICPDexQuote: (tokenIn: text, tokenOut: text, amountIn: nat, slippagePct:
+   float64) -> (AggregatedQuote);
+  getICPDexTokens: () -> (vec DexToken);
+  getICPLPPositions: () -> (vec LPPosition);
+  getICPRebalanceRecommendations: (preferences: RebalancePreferences,
+   tokenBalances: vec record {
+                        text;
+                        nat;
+                      }, pools: opt vec PoolInfo__1) ->
+   (vec RebalanceRecommendation);
+  getICRC1Balance: (ledgerCanisterId: text) -> (Result__1_1);
+  getICRC1BalanceFor: ("principal": principal, ledgerCanisterId: text) ->
+   (Result__1_1);
+  getICRC1Balances: (canisterIds: vec text) ->
+   (vec record {
+          text;
+          Result__1_1;
+        });
+  getICRC1TokenInfo: (ledgerCanisterId: text) -> (Result__1_40);
+  getICRC2Allowance: (owner: principal, spender: principal, ledgerCanisterId:
+   text) -> (Result__1_39);
+  getIcpSolTreasuryAddress: () -> (text);
+  getLitecoinAddressFor: (user: principal) -> (AddressInfo);
+  getLitecoinBalance: () -> (nat64);
+  getLitecoinBalanceFor: (address: text) -> (nat64);
+  getLitecoinDustLimit: () -> (nat64) query;
+  getLitecoinMaxSendAmount: (feeRate: opt nat64) -> (Result__1_38);
+  getLitecoinReservationCount: () -> (nat) query;
+  getLitecoinUTXOs: () -> (vec UTXO);
+  getLitecoinUTXOsFor: (address: text) -> (vec UTXO);
+  getMinswapQuote: (tokenIn: text, tokenOut: text, amountIn: nat64,
+   slippagePct: float64) -> (Result__5_1);
+  getMinswapTokens: () -> (vec MinswapTokenConfig) query;
+  getMsolTreasuryAddress: () -> (text);
+  getMyAptosAddress: () -> (AptosAddressInfo);
+  getMyBitcoinAddress: () -> (AddressInfo);
+  getMyCanisterUsage: (canisterId: principal) -> (Result__1_37);
+  getMyCardanoAddress: () -> (CardanoAddressInfo);
+  getMyCloakAddress: () -> (CloakAddressInfo);
+  getMyDeveloperAccount: () -> (opt DeveloperAccountV3);
+  getMyDeveloperKey: () -> (Result);
+  getMyEvmAddress: () -> (EvmAddressInfo);
+  getMyEvmBalance: (rpcEndpoint: text) -> (Result__1_1);
+  getMyGatewayAccount: () -> (UserAccount);
+  getMyGatewayDeposits: () -> (vec DepositRecord);
+  getMyIcpSwapOwed: () -> (vec Owed) query;
+  getMyIcrcWallet: () ->
+   (record {
+      icpAccountId: blob;
+      owner: principal;
+      subaccount: blob;
+    }) query;
+  getMyLitecoinAddress: () -> (AddressInfo);
+  getMyNearAddress: () -> (PubKeyInfo);
+  getMyNearBalance: () -> (nat);
+  getMyNearPubKey: () -> (PubKeyInfo);
+  getMySession: () -> (opt principal);
+  getMySolanaAddress: () -> (SolanaAddressInfo);
+  getMySolanaAta: (mint: text) -> (text);
+  getMySolanaAtaWithProgram: (mint: text, tokenProgramId: text) -> (Result);
+  getMySolanaBalance: () -> (Result__1_30);
+  getMyStrategyRules: () -> (vec Rule);
+  getMySuiAddress: () -> (SuiAddressInfo);
+  getMySuiBalance: () -> (nat64);
+  getMySuiCoins: () -> (vec CoinData);
+  getMyThorAddress: () -> (AddressInfo);
+  getMyTonAccountInfo: () -> (AccountInfo);
+  getMyTonAddress: () -> (TonAddressInfo);
+  getMyTonBalance: () -> (Result__1_30);
+  getMyTrc20Balance: (contractAddress: text) -> (Result__1_1);
+  getMyXrpAddress: () -> (XrpAddressInfo);
+  getMyXrpBalance: () -> (Result);
+  getNearUserAccountInfo: () ->
+   (record {
+      accountId: text;
+      pkBase58: text;
+      pkBytes: vec nat8;
+    });
+  getPairAddress: (tokenA: text, tokenB: text, rpcEndpoint: text) ->
+   (Result__1_36);
+  getPoolCount: () -> (nat) query;
+  getPoolReserves: (tokenA: text, tokenB: text, rpcEndpoint: text) ->
+   (Result__1_35);
+  getPoolStats: () ->
+   (record {
+      highLiquidityPools: nat;
+      lowLiquidityPools: nat;
+      mediumLiquidityPools: nat;
+      tokensWithPools: nat;
+      totalPools: nat;
+    }) query;
+  getRaydiumQuote: (inputMint: text, outputMint: text, amount: nat64,
+   slippageBps: nat64) -> (RaydiumQuoteResponse);
+  getRaydiumSwapMessageDiagnostics: (amountIn: nat64, minimumAmountOut:
+   nat64, userSourceAta: text, userDestAta: text) -> (RaydiumDiagnostics);
+  getRegisteredUsers: () -> (Result__1_34);
+  getRoutingSuggestions: (fromSymbol: text, toSymbol: text) ->
+   (Result__1_33) query;
+  getSolanaAddressFor: (user: principal) -> (SolanaAddressInfo);
+  getSolanaBalance: (address: text) -> (Result__1_30);
+  getSolanaTokenProgramIds: () ->
+   (record {
+      legacySpl: text;
+      token2022: text;
+    }) query;
+  getStEthAllowance: (owner: text, rpcEndpoint: text) -> (Result__1_1);
+  getStEthBalance: (user: text, rpcEndpoint: text) -> (Result__1_1);
+  getStablecoins: () -> (vec text) query;
+  getStrategyLogs: () -> (vec ExecutionLog) query;
+  getStrategyPriceCacheStats: () ->
+   (vec record {
+          text;
+          record {
+            ageSeconds: int;
+            price: nat64;
+          };
+        }) query;
+  getSuiAddressFor: (user: principal) -> (SuiAddressInfo);
+  getSuiBalanceFor: (address: text) -> (nat64);
+  getSuiCacheSize: () -> (nat) query;
+  getSuiCoinsFor: (address: text) -> (vec CoinData);
+  getSuiPackageConfig: () -> (opt PackageConfig) query;
+  getSuiSwapQuote: (network: Network, fromToken: text, toToken: text,
+   amountIn: text, slippageBps: nat64) -> (opt SwapQuote);
+  getSupportedChains: () -> (vec text) query;
+  getSupportedICPTokens: () ->
+   (vec
+     record {
+       canisterId: text;
+       category: text;
+       name: text;
+       symbol: text;
+       "type": text;
+     }) query;
+  getSupportedTokens: () -> (vec text) query;
+  getSwapErrorMessage: (fromSymbol: text, toSymbol: text) -> (text) query;
+  getSystemLogs: () -> (vec text) query;
+  getThorBalance: () -> (vec Balance);
+  getThorBalanceFor: (address: text) -> (vec Balance);
+  getTokenCount: () -> (nat) query;
+  getTokenInfo: (symbol: text) -> (opt TokenInfo) query;
+  getTokenQuote: (fromSymbol: text, toSymbol: text, amountIn: nat,
+   rpcEndpoint: text) -> (Result__1_32);
+  getTokenQuoteMultiHop: (fromSymbol: text, toSymbol: text, amountIn: 
+   nat, rpcEndpoint: text) -> (Result__1_31);
+  getTonAccountInfoFor: (address: text) -> (AccountInfo);
+  getTonAddressFor: (user: principal) -> (TonAddressInfo);
+  getTonBalanceFor: (address: text) -> (Result__1_30);
+  getTonCacheSize: () -> (nat) query;
+  getTotalCacheSize: () ->
+   (record {
+      aptos: nat;
+      bitcoin: nat;
+      cardano: nat;
+      evm: nat;
+      litecoin: nat;
+      near: nat;
+      solana: nat;
+      sui: nat;
+      thorchain: nat;
+      ton: nat;
+      total: nat;
+      tron: nat;
+      xrp: nat;
+    }) query;
+  getTrc20Balance: (ownerAddress: text, contractAddress: text) ->
+   (Result__1_1);
+  getTronAddress: () -> (TronAddressInfo);
+  getTrxBalance: (address: text) -> (Result__1_30);
+  getUSDCQuote: (ethAmount: nat, rpcEndpoint: text) -> (Result__1_29);
+  getWstEthBalance: (user: text, rpcEndpoint: text) -> (Result__1_1);
+  getXrpAddressFor: (user: principal) -> (XrpAddressInfo);
+  hasEvmNonceState: () -> (bool);
+  hasPathThrough: (symbolA: text, symbolIntermediary: text, symbolB: 
+   text) -> (bool) query;
+  hasTonApiKey: () -> (bool) query;
+  health: () -> (text) query;
+  icpSolPoolDeposit: (lamports: nat64) -> (Result__1_28);
+  initAutomation: () -> (text);
+  initGateway: () -> (Result);
+  invalidateEvmNonce: () -> (Result__1_4);
+  invalidateGasQuote: (quoteId: text) -> ();
+  isClmmPoolReady: (poolId: ClmmPoolId) -> (bool) query;
+  isEvmNonceLocked: () -> (bool);
+  isGatewayEnabled: () -> (bool) query;
+  isTokenSupported: (symbol: text) -> (bool) query;
+  isValidBitcoinAddress: (address: text) -> (bool);
+  isValidLitecoinAddress: (address: text) -> (bool);
+  isValidSuiAddress: (address: text) -> (bool) query;
+  isValidTonAddress: (address: text) -> (bool);
+  listCachedEvmNonceAddresses: () -> (vec text) query;
+  listClmmPools: () -> (vec ClmmPoolConfig) query;
+  listPoolsForToken: (symbol: text) -> (vec PoolInfo) query;
+  lockMyTokens: (amount: nat64, sourceAtaBase58: text) -> (LockResult);
+  mintSuiTokens: (recipientAddress: text, amount: nat64) -> (Result__1_6);
+  msolDeposit: (lamports: nat64) -> (Result__1_27);
+  poolExists: (symbolA: text, symbolB: text) -> (bool) query;
+  preflightEvmAddLiquidityGas: (quoteId: text, valueWei: nat, rpcEndpoint:
+   text, chainId: opt nat) -> (Result__1_26);
+  preflightEvmApproveGas: (quoteId: text, rpcEndpoint: text, chainId:
+   opt nat) -> (Result__1_26);
+  preflightEvmContractWriteGas: (quoteId: text, valueWei: nat, rpcEndpoint:
+   text, chainId: opt nat) -> (Result__1_26);
+  preflightEvmRemoveLiquidityGas: (quoteId: text, rpcEndpoint: text, chainId:
+   opt nat) -> (Result__1_26);
+  preflightEvmSendGas: (quoteId: text, valueWei: nat, rpcEndpoint: text,
+   chainId: nat) -> (Result__1_26);
+  preflightEvmSwapGas: (quoteId: text, fromSymbol: text, amountIn: nat,
+   rpcEndpoint: text, chainId: opt nat) -> (Result__1_26);
+  preflightGasPrice: (rpcEndpoint: text, bufferBps: opt nat) ->
+   (Result__1_25);
+  purchaseGatewayPackage: (tier: Tier, tokenSymbol: text) -> (Result__1_24);
+  pushPrices: (prices: vec record {
+                             priceMicroUsd: nat64;
+                             symbol: text;
+                           }) -> (Result__1_4);
+  regenerateDeveloperKey: () -> (Result);
+  registerCloakDeposit: (txHash: text) -> (Result);
+  registerDeveloperCanister: (canisterId: principal, appName: text) ->
+   (Result);
+  registerSession: (developerKey: text) -> (Result__1_4);
+  registerUserForBilling: (user: principal) -> (Result__1_4);
+  removeGatewayWhitelist: (p: principal) -> (Result__1_4);
+  removeICPLiquidity: (_request: RemoveLiquidityRequest) -> (Result__1_23);
+  removeLiquidity: (tokenASymbol: text, tokenBSymbol: text, lpTokenAmount:
+   nat, slippageBps: nat, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1_22);
+  removeLiquidityETH: (tokenSymbol: text, lpTokenAmount: nat, slippageBps:
+   nat, useFeeOnTransfer: bool, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1_21);
+  resyncEvmNonce: (rpcEndpoint: text) -> (Result__1_1);
+  retryMyIcpSwapPayout: () -> (record {
+                                 paid: nat;
+                                 stillHeld: nat;
+                               });
+  sendAptos: (toAddress: text, amount: nat64) -> (Result__1_6);
+  sendBitcoin: (toAddress: text, amount: nat64) -> (Result__1_20);
+  sendBitcoinDynamicFee: (toAddress: text, amount: nat64) -> (Result__1_20);
+  sendBitcoinWithFee: (toAddress: text, amount: nat64, feeRate: nat64) ->
+   (Result__1_20);
+  sendBitcoinWithNetwork: (toAddress: text, amount: nat64, feeRate:
+   opt nat64, network: Network__1) -> (Result__1_20);
+  sendCardanoTransaction: (toAddress: text, amount: nat64) -> (Result);
+  sendCloak: (toAddress: text, amount: nat64) -> (Result__1_19);
+  sendEvmNativeTokenAutonomous: (to: text, value: nat, rpcEndpoint: text,
+   chainId: nat, quoteId: opt text) -> (Result__1_18);
+  sendICP: (to: principal, amount: nat64) -> (Result__1_17);
+  sendICRC1: (to: principal, amount: nat, ledgerCanisterId: text) ->
+   (Result__1_16);
+  sendLitecoin: (toAddress: text, amount: nat64) -> (Result__1_14);
+  sendLitecoinWithFee: (toAddress: text, amount: nat64, feeRate: nat64) ->
+   (Result__1_14);
+  sendNearTransfer: (receiverId: text, amount: nat) -> (Result);
+  sendNearTransferFromUser: (receiverId: text, amount: nat) -> (Result);
+  sendSolTransaction: (toAddress: text, lamports: nat64) -> (Result);
+  sendSui: (recipientAddress: text, amount: nat64) -> (Result__1_6);
+  sendSuiMax: (recipientAddress: text) -> (Result__1_6);
+  sendSuiWithNetwork: (recipientAddress: text, amount: nat64, network:
+   Network) -> (Result__1_6);
+  sendThor: (toAddress: text, amount: nat64, memo: text) -> (Result);
+  sendTon: (toAddress: text, amountNanoton: nat64, bounce: bool, comment:
+   opt text, timeoutSeconds: nat32) -> (SendResult__2);
+  sendTonSimple: (toAddress: text, amountNanoton: nat64) -> (SendResult__2);
+  sendTonTestnet: (toAddress: text, amountNanoton: nat64, comment:
+   opt text) -> (SendResult__2);
+  sendTonWithComment: (toAddress: text, amountNanoton: nat64, comment:
+   text) -> (SendResult__2);
+  sendTrc20: (contractAddress: text, toAddress: text, amount: nat, feeLimit:
+   nat64) -> (Result);
+  sendTrx: (toAddress: text, amount: nat64) -> (Result);
+  sendXrpAutonomous: (destAddress: text, amountXrp: text, destinationTag:
+   opt nat32) -> (SendResult__1);
+  sendXrpIOU: (destAddress: text, currency: text, issuer: text, amount: 
+   text, destinationTag: opt nat32) -> (SendResult__1);
+  setGatewayEnabled: (e: bool) -> (Result__1_4);
+  setSuiPackageConfig: (packageId: text, treasuryCapId: text, moduleName:
+   text) -> ();
+  setTonApiKey: (key: text) -> ();
+  signAptosTransferRelayer: (toAddress: text, amount: nat64, sequenceNumber:
+   nat64, chainId: nat8, expirationTimestampSecs: nat64) ->
+   (record {
+      senderAddress: text;
+      signedTxBcs: vec nat8;
+      txHash: vec nat8;
+    });
+  signCardanoTransferRelayer: (recipient: text, amountLovelace: nat64, utxos:
+   vec record {
+         tx_hash: text;
+         tx_index: nat64;
+         value: nat64;
+       }, senderBech32: text) ->
+   (variant {
+      err: text;
+      ok: record {
+            signedTxCbor: vec nat8;
+            txHash: vec nat8;
+          };
+    });
+  signNearTransferRelayer: (recipientId: text, amountYocto: nat, nonce:
+   nat64, blockHash: vec nat8) ->
+   (record {
+      senderAccountId: text;
+      signedTxBytes: vec nat8;
+      txHash: vec nat8;
+    });
+  signSolSwapTxsOffchain: (txBase64Array: vec text) ->
+   (vec record {
+          signature: vec nat8;
+          signedTxBase64: text;
+        });
+  signSolSwapTxsRelayer: (txBase64Array: vec text) ->
+   (vec record {
+          signature: vec nat8;
+          signedTxBase64: text;
+        });
+  signSolTransferOffchain: (toAddress: text, lamports: nat64,
+   blockhashBase58: text) ->
+   (record {
+      publicKey: vec nat8;
+      signature: vec nat8;
+      signedTxBase64: text;
+      txMessage: vec nat8;
+    });
+  signSolTransferRelayer: (toAddress: text, lamports: nat64, blockhashBase58:
+   text) ->
+   (record {
+      publicKey: vec nat8;
+      signature: vec nat8;
+      signedTxBase64: text;
+      txMessage: vec nat8;
+    });
+  signSuiTransferRelayer: (recipientAddress: text, amount: nat64, gasCoinId:
+   text, gasCoinVersion: nat64, gasCoinDigest: text) ->
+   (record {
+      senderAddress: text;
+      signatureBase64: text;
+      txBytesBase64: text;
+    });
+  signTonTransferRelayer: (toAddress: text, amountNanoton: nat64, seqno:
+   nat32, bounce: bool, comment: opt text, timeoutSeconds: nat32,
+   accountState: text) ->
+   (record {
+      bocBase64: text;
+      payloadHash: vec nat8;
+      senderAddress: text;
+    });
+  signTrxTransferRelayer: (toAddress: text, amountSun: nat64, refBlockBytes:
+   vec nat8, refBlockHash: vec nat8, expiration: int64, timestamp: int64) ->
+   (Result__1_13);
+  signXrpTransferRelayer: (destAddress: text, amountXrp: text, sequence:
+   nat32, lastLedgerSeq: nat32, fee: nat64, destinationTag: opt nat32) ->
+   (record {
+      publicKeyHex: text;
+      senderAddress: text;
+      signedTxHex: text;
+      txHash: text;
+    });
+  simulateSignedSolanaTxBase64: (txB64: text) -> (text);
+  solanaAccountExists: (address: text) -> (bool);
+  stakeEthForStEth: (ethAmountWei: nat, rpcEndpoint: text, quoteId:
+   opt text) -> (Result__1_12);
+  swapClmm: (poolId: ClmmPoolId, amount: nat64, slippageBps: nat64,
+   zeroForOne: bool, inputAta: opt text, outputAta: opt text) ->
+   (ClmmSwapResult);
+  swapClmmUser: (poolId: ClmmPoolId, amount: nat64, slippageBps: nat64,
+   zeroForOne: bool, inputAta: opt text, outputAta: opt text) ->
+   (ClmmSwapResult);
+  swapETHForUSDC: (ethAmount: nat, slippageBps: nat, rpcEndpoint: text) ->
+   (Result__1_11);
+  swapRaydiumApi: (inputMint: text, outputMint: text, amount: nat64,
+   slippageBps: nat64, wrapSol: bool, unwrapSol: bool, inputAta: opt text,
+   outputAta: opt text) -> (RaydiumApiSwapResult);
+  swapRaydiumApiUser: (inputMint: text, outputMint: text, amount: nat64,
+   slippageBps: nat64, wrapSol: bool, unwrapSol: bool, inputAta: opt text,
+   outputAta: opt text) -> (RaydiumApiSwapResult);
+  swapRaydiumNative: (amountIn: nat64, minimumAmountOut: nat64,
+   userSourceAta: text, userDestAta: text) -> (NativeSwapResult);
+  swapTokens: (quoteId: text, fromSymbol: text, toSymbol: text, amountIn:
+   nat, slippageBps: nat, useFeeOnTransfer: bool, rpcEndpoint: text) ->
+   (Result__1_10);
+  swapTokensMultiHop: (fromSymbol: text, toSymbol: text, amountIn: nat,
+   slippageBps: nat, useFeeOnTransfer: bool, chainId: nat, rpcEndpoint:
+   text) -> (Result__1_9);
+  swapUSDCForETH: (usdcAmount: nat, slippageBps: nat, rpcEndpoint: text) ->
+   (Result__1_8);
+  syncBitcoinUTXOs: () -> (nat);
+  syncLitecoinUTXOs: () -> (nat);
+  testAtaDerivation: () ->
+   (record {
+      expectedFromSdk: text;
+      match: bool;
+      mint: text;
+      owner: text;
+      viaModule: text;
+      viaPdaDirect: text;
+    });
+  testSpecificAta: (ownerB58: text, mintB58: text) ->
+   (record {
+      derivedAta: text;
+      mint: text;
+      owner: text;
+    });
+  testUsdcTokenProgram: () -> (text);
+  transferFromICRC2: (from: principal, to: principal, amount: nat,
+   ledgerCanisterId: text) -> (Result__1_7);
+  transferSplToken: (amount: nat64, sourceAta: text, destinationAta: 
+   text) -> (TransferAndSendResult);
+  transferSuiCoin: (coinObjectId: text, recipientAddress: text, amount:
+   nat64) -> (Result__1_6);
+  transform: (args:
+   record {
+     context: blob;
+     response:
+      record {
+        body: blob;
+        headers: vec record {
+                       name: text;
+                       value: text;
+                     };
+        status: nat;
+      };
+   }) ->
+   (record {
+      body: blob;
+      headers: vec record {
+                     name: text;
+                     value: text;
+                   };
+      status: nat;
+    }) query;
+  transformSuiResponse: (args: TransformArgs) -> (HttpResponse) query;
+  unregisterDeveloperCanister: (canisterId: principal) -> (Result__1_4);
+  unregisterUserFromBilling: (user: principal) -> (Result__1_4);
+  unwrapWstEth: (amountWstEth: nat, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1_5);
+  updateStrategyRuleStatus: (ruleId: nat, status: RuleStatus) ->
+   (Result__1_4);
+  validateDeveloperKey: (key: text) -> (bool) query;
+  validateSwapPath: (fromSymbol: text, toSymbol: text) -> (Result__1_3) query;
+  verifyEvmAddressFormat: (address: text) ->
+   (record {
+      isValid: bool;
+      reason: text;
+    });
+  verifyLastEvmTransaction: (rpcEndpoint: text) ->
+   (record {
+      currentNonce: nat;
+      increased: bool;
+      note: text;
+    });
+  verifyTonWalletCode: () -> (Result);
+  version: () -> (text) query;
+  withdrawGatewayFees: (tokenSymbol: text, amount: nat, to: principal) ->
+   (Result__1_1);
+  wrapStEth: (amountStEth: nat, rpcEndpoint: text, quoteId: opt text) ->
+   (Result__1);
+  xrpFindPaths: (destinationAmount: TokenAmount, sourceCurrencies:
+   vec TokenAmount) -> (PathFindResult);
+  xrpGetAccountLines: () -> (Result);
+  xrpGetAmmInfo: (asset1Currency: text, asset1Issuer: text, asset2Currency:
+   text, asset2Issuer: text) -> (Result);
+  xrpSetTrustline: (currency: text, issuer: text, limit: text) ->
+   (TrustSetResult);
+  xrpSignIOUPayment: (destAddress: text, currency: text, issuer: text,
+   amount: text, sequence: nat32, lastLedgerSeq: nat32, fee: nat64,
+   destinationTag: opt nat32) -> (SignedTxResult);
+  xrpSignPayment: (destAddress: text, amountXrp: text, sequence: nat32,
+   lastLedgerSeq: nat32, fee: nat64, destinationTag: opt nat32) ->
+   (SignedTxResult);
+  xrpSignSwap: (destinationAmount: TokenAmount, sendMaxAmount: TokenAmount,
+   sequence: nat32, lastLedgerSeq: nat32, fee: nat64) -> (SignedTxResult);
+  xrpSignTrustline: (currency: text, issuer: text, limit: text, sequence:
+   nat32, lastLedgerSeq: nat32, fee: nat64) -> (SignedTxResult);
+  xrpSwap: (destinationAmount: TokenAmount, sendMaxAmount: TokenAmount,
+   paths: text, slippageBps: nat) -> (SwapResult);
+}
