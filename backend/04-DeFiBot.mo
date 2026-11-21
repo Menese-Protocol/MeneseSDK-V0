@@ -20,6 +20,7 @@
 
 import Menese "MeneseInterface";
 import Result "mo:base/Result";
+import Text "mo:base/Text";
 import Timer "mo:base/Timer";
 import Time "mo:base/Time";
 import Buffer "mo:base/Buffer";
@@ -27,10 +28,10 @@ import Nat "mo:base/Nat";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
 
-actor DeFiBot {
+persistent actor DeFiBot {
 
   // ── Config ─────────────────────────────────────────────────
-  let menese = Menese.mainnet();
+  transient let menese = Menese.mainnet();
 
   // Your Ethereum RPC endpoint (Alchemy, Infura, or public)
   stable var ethRpc : Text = "https://eth.llamarpc.com";
@@ -41,10 +42,10 @@ actor DeFiBot {
   stable var lpAllocationBps : Nat = 3000;    // 30% to Uniswap LP
 
   // Minimum ETH balance to keep unallocated (for gas, in wei)
-  let MIN_RESERVE_WEI : Nat = 50_000_000_000_000_000; // 0.05 ETH
+  transient let MIN_RESERVE_WEI : Nat = 50_000_000_000_000_000; // 0.05 ETH
 
   // Rebalance threshold — only rebalance if drift > 5%
-  let REBALANCE_THRESHOLD_BPS : Nat = 500;
+  transient let REBALANCE_THRESHOLD_BPS : Nat = 500;
 
   // ── Operation log ────────────────────────────────────────
   type LogEntry = {
@@ -55,7 +56,7 @@ actor DeFiBot {
   };
 
   stable var logs : [LogEntry] = [];
-  let logBuffer = Buffer.Buffer<LogEntry>(200);
+  transient let logBuffer = Buffer.Buffer<LogEntry>(200);
 
   func addLog(action : Text, details : Text, success : Bool) {
     logBuffer.add({

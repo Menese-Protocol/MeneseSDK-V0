@@ -21,14 +21,14 @@ import Buffer "mo:base/Buffer";
 import Nat64 "mo:base/Nat64";
 import Debug "mo:base/Debug";
 
-actor AutomationBot {
+persistent actor AutomationBot {
 
   // ── Config ─────────────────────────────────────────────────
-  let menese = Menese.mainnet();
+  transient let menese = Menese.mainnet();
 
   // Token mints on Solana
-  let SOL_MINT = "So11111111111111111111111111111111111111112";
-  let USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  transient let SOL_MINT = "So11111111111111111111111111111111111111112";
+  transient let USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
   // Threshold: swap when SOL balance exceeds this (in lamports)
   stable var swapThresholdLamports : Nat64 = 500_000_000; // 0.5 SOL
@@ -37,7 +37,7 @@ actor AutomationBot {
   stable var treasuryAddress : Text = "";
 
   // Slippage tolerance for swaps (basis points, 100 = 1%)
-  let SLIPPAGE_BPS : Nat64 = 150; // 1.5%
+  transient let SLIPPAGE_BPS : Nat64 = 150; // 1.5%
 
   // ── Operation log ──────────────────────────────────────────
   type LogEntry = {
@@ -48,7 +48,7 @@ actor AutomationBot {
   };
 
   stable var logs : [LogEntry] = [];
-  let logBuffer = Buffer.Buffer<LogEntry>(100);
+  transient let logBuffer = Buffer.Buffer<LogEntry>(100);
 
   func addLog(action : Text, details : Text, success : Bool) {
     let entry : LogEntry = {

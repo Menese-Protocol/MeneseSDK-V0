@@ -24,7 +24,7 @@ import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Iter "mo:base/Iter";
 
-actor WalletBot {
+persistent actor WalletBot {
 
   // ── MeneseSDK remote actor type ────────────────────────────
   // Minimal interface — only the functions ClawdBot needs.
@@ -100,7 +100,7 @@ actor WalletBot {
     swapRaydiumApiUser : shared (Text, Text, Nat64, Nat64, Bool, Bool, ?Text, ?Text) -> async RaydiumApiSwapResult;
   };
 
-  let menese : MeneseSDK = actor ("urs2a-ziaaa-aaaad-aembq-cai");
+  transient let menese : MeneseSDK = actor ("urs2a-ziaaa-aaaad-aembq-cai");
 
   // ── EVM RPC config ──────────────────────────────────────────
   // You MUST provide your own RPC endpoints for EVM chains.
@@ -108,7 +108,7 @@ actor WalletBot {
   type EvmChainConfig = { rpc : Text; chainId : Nat };
 
   stable var evmConfigEntries : [(Text, EvmChainConfig)] = [];
-  let evmConfigs = HashMap.HashMap<Text, EvmChainConfig>(10, Text.equal, Text.hash);
+  transient let evmConfigs = HashMap.HashMap<Text, EvmChainConfig>(10, Text.equal, Text.hash);
 
   // Set RPC for an EVM chain. Call once per chain.
   // Example: setEvmRpc("ethereum", "https://eth.llamarpc.com", 1)
@@ -386,7 +386,7 @@ actor WalletBot {
   };
 
   stable var txLogEntries : [TxLog] = [];
-  let txLog = Buffer.Buffer<TxLog>(50);
+  transient let txLog = Buffer.Buffer<TxLog>(50);
 
   public query func getTransactionLog() : async [TxLog] {
     Buffer.toArray(txLog);

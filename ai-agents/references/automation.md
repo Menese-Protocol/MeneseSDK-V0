@@ -19,8 +19,8 @@ ICP canisters can run recurring timers — no server, no cron, fully on-chain.
 import Timer "mo:base/Timer";
 import Menese "MeneseInterface";
 
-actor MyBot {
-  let menese = Menese.mainnet();
+persistent actor MyBot {
+  transient let menese = Menese.mainnet();
   stable var timerId : ?Timer.TimerId = null;
 
   func botCycle() : async () {

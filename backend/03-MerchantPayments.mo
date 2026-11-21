@@ -26,10 +26,10 @@ import Iter "mo:base/Iter";
 import Array "mo:base/Array";
 import Principal "mo:base/Principal";
 
-actor MerchantPayments {
+persistent actor MerchantPayments {
 
   // ── Config ─────────────────────────────────────────────────
-  let menese = Menese.mainnet();
+  transient let menese = Menese.mainnet();
 
   // Your treasury addresses (where to sweep funds)
   stable var solTreasury : Text = "";
@@ -59,7 +59,7 @@ actor MerchantPayments {
   // ── State ──────────────────────────────────────────────────
   stable var nextInvoiceId : Nat = 1;
   stable var invoiceEntries : [(Text, Invoice)] = [];
-  let invoices = HashMap.HashMap<Text, Invoice>(100, Text.equal, Text.hash);
+  transient let invoices = HashMap.HashMap<Text, Invoice>(100, Text.equal, Text.hash);
 
   // ── Admin: set treasury addresses ──────────────────────────
   public shared func setSolTreasury(addr : Text) : async () {

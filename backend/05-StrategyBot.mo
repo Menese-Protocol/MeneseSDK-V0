@@ -18,9 +18,9 @@ import Time "mo:base/Time";
 import Timer "mo:base/Timer";
 import Array "mo:base/Array";
 
-actor StrategyBot {
+persistent actor StrategyBot {
 
-  let menese = Menese.mainnet();
+  transient let menese = Menese.mainnet();
 
   // ── Create a Take Profit rule ──────────────────────────────
   // Sell SOL when price exceeds target
@@ -154,7 +154,7 @@ actor StrategyBot {
 
   // ── Monitor: periodic rule status check ────────────────────
   // Use ICP timers to periodically check and log rule status
-  var monitorTimerId : ?Timer.TimerId = null;
+  transient var monitorTimerId : ?Timer.TimerId = null;
 
   public shared func startMonitor() : async Text {
     switch (monitorTimerId) {

@@ -100,9 +100,10 @@ Your Canister → MeneseSDK Canister (HTTP outcalls + signing) → Blockchain
 
 ```motoko
 import Menese "MeneseInterface";
+import Result "mo:base/Result";
 
-actor MyApp {
-  let menese = Menese.mainnet();
+persistent actor MyApp {
+  transient let menese = Menese.mainnet();
 
   // Get your canister's Solana address (FREE)
   public shared func getMyAddress() : async Text {

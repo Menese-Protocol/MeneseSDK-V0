@@ -19,9 +19,9 @@ import Result "mo:base/Result";
 import Debug "mo:base/Debug";
 import Principal "mo:base/Principal";
 
-actor BasicIntegration {
+persistent actor BasicIntegration {
 
-  let menese = Menese.mainnet();
+  transient let menese = Menese.mainnet();
 
   // ── Get key addresses (FREE) ────────────────────────────
   // Your canister gets its own unique address on every chain.

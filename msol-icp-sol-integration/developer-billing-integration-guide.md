@@ -93,10 +93,10 @@ When a user logs into your app, your backend canister calls `registerUserForBill
 import Result "mo:base/Result";
 import Principal "mo:base/Principal";
 
-actor MyAppBackend {
+persistent actor MyAppBackend {
 
   // Reference to MeneseSDK backend
-  let menese : actor {
+  transient let menese : actor {
     registerUserForBilling : (Principal) -> async Result.Result<(), Text>;
     unregisterUserFromBilling : (Principal) -> async Result.Result<(), Text>;
     getRegisteredUsers : () -> async Result.Result<[Principal], Text>;
