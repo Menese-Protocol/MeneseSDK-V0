@@ -1,4 +1,4 @@
-// Private balance — the contract between the screens and the wallet engine.
+// Private balance — the contract between the screens and the private-balance engine.
 //
 // The screens never touch note secrets, proofs or keys. They call a PrivateWallet, which is either the
 // real engine (engine.ts: the shielded ledger client, proving in a Web Worker) or the mock used by the
@@ -20,7 +20,7 @@ export type OnProgress = (p: Progress) => void;
 export interface IncomingPayment {
   id: string;
   amountE8s: bigint;
-  /// The payment reference, when known ("6-1-9").
+  /// The payment reference ("6-1-9").
   reference?: string;
   /// ms since epoch, from the ledger's claim log
   receivedAt: number;
@@ -89,9 +89,60 @@ export interface PrivateWalletState {
 export interface SendResult {
   /// true when the recipient has never used a private balance: they claim it when they next sign in
   claimable: boolean;
-  /// The claim reference, for claimable payments only (a payment straight into a private balance
-  /// carries a decoy envelope, so there is nothing to look up).
-  reference: string | null;
+  /// The payment's reference: "48213-0-7" for a payment straight into a private balance (log
+  /// position, output slot 0, check digit), "6-1-9" for a claimable payment (claim log index, offset
+  /// of the second part, check digit). It is safe to share in any chat: it opens nothing and shows
+  /// no amount. The recipient sees the same reference in `snapshot.received`, and either side can
+  /// make a receipt for the payment with `engine.receipt(reference)`.
+  reference: string;
+}
+
+export interface SendOptions {
+  /// The shop's order id (an order number, or a hash of the invoice): a string of at most 32 bytes
+  /// in UTF-8, or at most 32 bytes. Sealed inside the payment for the recipient alone, and bound to
+  /// the payment's commitment, so it cannot be changed or read by anyone else.
+  orderId?: string | Uint8Array;
+}
+
+/// One payment this account received.
+export interface ReceivedPayment {
+  /// The same reference the payer got from sendPrivately.
+  reference: string;
+  /// What arrived in this account's private balance (for a claimable payment: what lands when it is claimed).
+  amountE8s: bigint;
+  /// The order id the payer attached (string or bytes, as they gave it), or null.
+  orderId: string | Uint8Array | null;
+  /// ms since epoch, the ledger's time for the payment
+  receivedAt: number;
+  /// "paid": in this account's private balance. "claimable": a claimable payment waiting to be
+  /// claimed with engine.claim(claimId); until then the payer can still take it back. "takenBack":
+  /// the payer took it back before it was claimed. Release an order only on "paid".
+  status: "paid" | "claimable" | "takenBack";
+  /// "direct" (paid straight into this account's private balance) or "claimable".
+  kind: "direct" | "claimable";
+  /// For a claimable payment waiting to be claimed: the id to pass to engine.claim. Otherwise null.
+  claimId: string | null;
+}
+
+/// One payment's receipt (engine.receipt), plain JSON. Checked by verifyReceipt with no keys.
+export interface Receipt {
+  type: "menese-payment-receipt";
+  version: 1;
+  /// the shielded ledger the payment is on
+  ledger: string;
+  reference: string;
+  /// the principal that was paid
+  recipient: string;
+  amountE8s: string;
+  /// the order id when it was text, or null
+  orderId: string | null;
+  /// the order id when it was bytes (hex), or null
+  orderIdHex: string | null;
+  kind: "direct" | "claimable";
+  /// the payment note's opening: the payment seed, or (payments made before order ids) its rcm
+  direct?: { seed: string } | { rcm: string };
+  /// a claimed claimable payment: its (spent) one-time key, each part's opening, and the note the claim made
+  claimable?: { otk: string; parts: ({ v: string; seed: string } | { v: string; rcm: string })[]; sweep: { position: number; rcm: string } };
 }
 
 export interface PrivateWallet {
@@ -102,7 +153,7 @@ export interface PrivateWallet {
   enable(): Promise<void>;
   makePrivate(amountE8s: bigint, onProgress: OnProgress): Promise<void>;
   quote(kind: "send" | "moveOut", amountE8s: bigint, recipient?: string): Promise<Quote>;
-  sendPrivately(recipient: string, amountE8s: bigint, onProgress: OnProgress): Promise<SendResult>;
+  sendPrivately(recipient: string, amountE8s: bigint, onProgress: OnProgress, options?: SendOptions): Promise<SendResult>;
   claim(paymentId: string, onProgress: OnProgress): Promise<void>;
   takeBack(paymentId: string, onProgress: OnProgress): Promise<void>;
   moveOut(amountE8s: bigint, onProgress: OnProgress): Promise<void>;

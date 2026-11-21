@@ -95,7 +95,7 @@ export async function anonymousDirectory() {
 }
 
 /// The token balance of `principal`'s default account, read with no identity: one query, so the
-/// screen can show the public balance before the private session (prover, vetKey, scan) is open.
+/// screen can show the public balance before the engine (prover, vetKey, scan) is open.
 export async function anonymousTokenBalance(principal) {
   const agent = await agentFor(new AnonymousIdentity());
   const token = Actor.createActor(tokenIdl, { agent, canisterId: CANISTERS.token });
@@ -122,6 +122,18 @@ export async function actorsFor(identity) {
 }
 
 export const poolPrincipal = () => Principal.fromText(CANISTERS.zk_ledger);
+
+/// Anonymous ledger and directory actors for an explicitly given network ({ host, zkLedger,
+/// directory }), without touching the configured one: receipt checks run with these, so checking a
+/// receipt never changes what an open engine talks to.
+export async function anonymousActorsAt({ host, zkLedger, directory }) {
+  const agent = new HttpAgent({ host, identity: new AnonymousIdentity() });
+  if (host.includes("127.0.0.1") || host.includes("localhost")) await agent.fetchRootKey();
+  return {
+    ledger: Actor.createActor(ledgerIdl, { agent, canisterId: zkLedger }),
+    directory: Actor.createActor(directoryIdl, { agent, canisterId: directory }),
+  };
+}
 
 // ---- hex <-> bytes ----
 export const hexToBytes = (h) => {

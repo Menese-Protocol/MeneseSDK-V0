@@ -82,7 +82,7 @@ const publicE8s = await publicBalanceOf(net, principal);
 ```
 
 The directory allows **20 key derivations per principal per day** (and 5,000 per hour in total).
-Each `open()` uses one. Open the engine once per signed-in session and keep it (section 5).
+Each `open()` uses one. Open the engine once per sign-in and keep it (section 5).
 
 ## 4. Setup
 
@@ -91,9 +91,11 @@ Each `open()` uses one. Open the engine once per signed-in session and keep it (
 - A browser app with a bundler that supports module workers written as
   `new Worker(new URL("...", import.meta.url), { type: "module" })` and wasm loaded the same way.
   Vite does both with no configuration. Use Vite unless the project already has something else.
-- The engine runs in the browser only (Web Workers, IndexedDB, localStorage, WebCrypto). Never
-  import it in server code. In Next.js or another server-rendering framework, load it only on the
-  client (for example `dynamic(() => import(...), { ssr: false })`).
+- In an app, the engine runs in the user's browser (Web Workers, IndexedDB, WebCrypto). Never
+  import `engine/core.ts` in server-rendered code. In Next.js or another server-rendering framework,
+  load it only on the client (for example `dynamic(() => import(...), { ssr: false })`).
+- A server that receives payments with its own identity (a shop's inbox) uses `src/node.js`
+  instead: Node 24 with a TypeScript loader (`node --import tsx`). See `examples/shop-inbox/`.
 - Node 18 or newer for the key tool.
 
 ### Starting from nothing
@@ -101,8 +103,8 @@ Each `open()` uses one. Open the engine once per signed-in session and keep it (
 If there is no app yet:
 
 ```bash
-npm create vite@latest my-private-app -- --template react-ts
-cd my-private-app
+npm create vite@latest private-app -- --template react-ts
+cd private-app
 npm install
 ```
 
@@ -209,7 +211,7 @@ const snap = await engine.sync();   // notes, balances, incoming claimable payme
 engine.close();          // on sign-out: stops the workers
 ```
 
-- Create **one engine per signed-in user** and keep it for the session (a React context or a
+- Create **one engine per signed-in user** and keep it until sign-out (a React context or a
   module-level variable). Do not create it inside a component render.
 - In React, `StrictMode` runs effects twice in development. Guard `open()` (for example with a ref
   or a module-level promise) so it runs once; otherwise every page load uses two of the user's
@@ -231,6 +233,7 @@ engine.close();          // on sign-out: stops the workers
 | `noteCount` | how many notes make up the private balance |
 | `incoming` | claimable payments to this user: `{ id, amountE8s, receivedAt }` |
 | `pendingSent` | this user's claimable payments not yet claimed: `{ id, to, amountE8s }` |
+| `received` | payments to this user, newest first: `{ reference, amountE8s, orderId, receivedAt, status, kind, claimId }` (see "Accept payments in a shop") |
 | `registered` | private balance is turned on |
 
 ### Amounts
@@ -263,8 +266,8 @@ if (!q.possible) { show(q.reason); return; }
 // show: formatIcp(q.privateFeesE8s) from the private balance,
 //       formatIcp(q.publicFeesE8s) ICP network fees (when not zero),
 //       q.claimable ? "They will claim it when they sign in" : "Arrives in their private balance"
-const result = await engine.sendPrivately(recipientPrincipalText, amount, onProgress);
-// result.claimable, result.reference (a code like "6-1-9" for claimable payments)
+const result = await engine.sendPrivately(recipientPrincipalText, amount, onProgress, { orderId }); // orderId optional
+// result.claimable, result.reference (a code like "48213-0-7", or "6-1-9" for a claimable payment)
 ```
 
 The recipient is a principal as text. The engine looks it up in the directory (anonymously) and
@@ -282,6 +285,45 @@ the fee shown is the fee paid.
 - `result.reference` opens nothing on its own and shows no amount, so it is safe to share in any chat.
 
 How it works in detail: `CLAIMABLE-PAYMENTS.md` in this folder.
+
+### Accept payments in a shop
+
+Every payment has a `reference`, can carry the shop's order id, shows up in the shop's inbox, and
+can be shown to a third party with a receipt. The four steps:
+
+1. **Checkout (the customer's app).** Pay with the order id:
+   ```ts
+   const r = await engine.sendPrivately(shopPrincipal, priceE8s, onProgress, { orderId: "ORD-10023" });
+   // keep r.reference with the order; show it to the customer
+   ```
+   `orderId` is a string of at most 32 bytes in UTF-8, or a `Uint8Array` of at most 32 bytes. Only
+   the shop can read it. Longer ids are refused before anything moves: send a hash of them.
+2. **Inbox (the shop).** The shop runs its own engine with its own identity, in the browser or in
+   Node (`createNodeEngine` from `src/node.js`), and turns on private balance once (`enable()`),
+   so payments arrive straight into it:
+   ```ts
+   engine.onPayment((p) => markPaid(p.orderId, p.reference, p.amountE8s));
+   setInterval(() => engine.sync(), 15_000);
+   ```
+   `snapshot.received` lists every payment: `status` is `"paid"` when it is in the shop's private
+   balance, `"claimable"` when it was sent before the shop turned on private balance (claim it with
+   `engine.claim(p.claimId, onProgress)`), and `"takenBack"` if the payer took it back first.
+   `onPayment` fires once per payment when it is `"paid"`. After a restart it reports earlier
+   payments again on the first sync, so `markPaid` must be safe to repeat.
+3. **Release the order.** Check `p.orderId`, that `p.amountE8s` is at least the price, and that
+   `p.status === "paid"`. Then ship. Do not release on a `"claimable"` payment: until it is
+   claimed, the payer can still take it back.
+4. **Receipt, for disputes.** Either side can export one payment:
+   ```ts
+   const receipt = await engine.receipt(reference);   // plain JSON
+   ```
+   Anyone checks it with `verifyReceipt(receipt)` from `src/receipt.ts` (`src/node.js` in Node).
+   It needs no keys and no sign-in, and it is `true` only when the amount, the principal paid, the
+   order id and the reference are exactly what is on the ledger. It shows that one payment and
+   nothing else (no balance, no other payment, no key). A claimable payment has a receipt once it is
+   claimed.
+
+Details and the cryptography: `PAYMENTS.md` in this folder.
 
 ### Move out
 
@@ -339,7 +381,8 @@ Never:
   proofs. Do not add analytics around the engine's internals.
 - Edit or rebuild the wasm files or the proving keys. To check them, use `tools/build-wasm.sh`
   (see `README.md`); it must print the same hashes.
-- Run the engine on a server, in Node, or during server rendering.
+- Run the browser engine during server rendering. On a server (a shop's inbox, a script), use
+  `createNodeEngine` from `src/node.js` with the server's own identity, never a user's.
 
 ## 8. Checking it works
 
@@ -366,5 +409,7 @@ use small amounts and tell the user before each one.
 
 - `README.md`: install, keys, rebuilding the wasm byte for byte.
 - `CLAIMABLE-PAYMENTS.md`: envelopes, claiming, taking back, finding a payment.
+- `PAYMENTS.md`: payment references, order ids, the inbox and receipts.
+- `examples/shop-inbox/`: a Node shop that marks orders paid as payments arrive.
 - Ledger source, trusted-setup ceremony and its record:
   [Menese-Protocol/Shielded-Ledger-Hivemind](https://github.com/Menese-Protocol/Shielded-Ledger-Hivemind).

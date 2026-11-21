@@ -12,7 +12,7 @@ import nacl from "tweetnacl";
 import { IbeCiphertext } from "@dfinity/vetkeys";
 import { Principal } from "@dfinity/principal";
 import { hexToBytes, bytesToHex, anonymousLedger } from "./ic.js";
-import { privateTransferEx, readNotes, ZERO_FIELD } from "./wallet.js";
+import { privateTransferEx, readNotes, openEnvelope, newPayment, orderIdBytes, boundOrderId, ZERO_FIELD } from "./wallet.js";
 import { CLAIM_PAYLOAD_LEN, concat, sealClaim, claimBinding } from "./envelope.js";
 
 export { CLAIM_PAYLOAD_LEN, CLAIM_ENVELOPE_LEN, sealClaim, decoyEnvelope, claimBinding, decoyFor } from "./envelope.js";
@@ -28,10 +28,32 @@ export function oneTimeKey(wasm, senderNkHex, firstNfHex) {
   return { nk, pk: wasm.shielded_address(nk) };
 }
 
-/// The commitment randomness of one claimable note, deterministic in the sender's key and that
-/// transfer's first input nullifier.
+/// The commitment randomness of one claimable note written by earlier client versions,
+/// deterministic in the sender's key and that transfer's first input nullifier.
 export function claimRcm(wasm, senderNkHex, nfHex) {
   return wasm.field_from_seed(nacl.hash(concat(enc.encode("picp-claim-rcm/v1"), hexToBytes(senderNkHex), hexToBytes(nfHex))));
+}
+
+/// The payment seed of one claimable note (wallet.js newPayment): deterministic in the sender's key
+/// and that transfer's first input nullifier, so the sender can always recompute it. Revealing it
+/// in a receipt reveals nothing about the sender's key (it is a hash output).
+export function claimPaySeed(senderNkHex, nfHex) {
+  return bytesToHex(nacl.hash(concat(enc.encode("picp-claim-pay-seed/v1"), hexToBytes(senderNkHex), hexToBytes(nfHex))).slice(0, 32));
+}
+
+/// The X25519 key a claimable note's own ciphertext is sealed to, derived from the payment's
+/// one-time key. Whoever can open the envelope (the recipient) or wrote it (the sender) knows the
+/// one-time key, and so can read the note's sealed payment fields (the order id); nobody else can.
+/// Earlier client versions sealed this ciphertext to a throwaway key; it is the same length either way.
+export function claimNoteBox(otkNkHex) {
+  return nacl.box.keyPair.fromSecretKey(nacl.hash(concat(enc.encode("picp-claim-note-box/v1"), hexToBytes(otkNkHex))).slice(0, 32));
+}
+
+/// The commitment randomness of the note a claim (or a take-back) creates for the full amount:
+/// deterministic in the payment's one-time key, so the sender of a claimed payment can also show
+/// where it landed (receipt.js). Each one-time key is spent exactly once.
+export function sweepRcm(wasm, otkNkHex) {
+  return wasm.field_from_seed(nacl.hash(concat(enc.encode("picp-claim-sweep-rcm/v1"), hexToBytes(otkNkHex))));
 }
 
 export function encodePayload({ part, parts, v, rcm, otkNk }) {
@@ -83,6 +105,7 @@ const damm = (digits) => [...digits].reduce((i, d) => DAMM[i][Number(d)], 0);
 const checkDigits = (numbers) => numbers.map((n) => `${String(n).length}${n}`).join("");
 
 /// "48213-2-6" for a first envelope at index 48213 and a second part 2 envelopes later.
+/// (The reference of a claimable payment.)
 export function formatReference(indices) {
   const [first, ...rest] = indices;
   const numbers = [first, ...rest.map((i) => i - first)];
@@ -91,12 +114,41 @@ export function formatReference(indices) {
 }
 
 /// The claim-log indices in a reference, or null when it is malformed or its check digit fails.
+// A number in a reference is written without leading zeros. A typed 0 in front of a number would
+// change its length, which the length-prefixed check string would see as more than one changed
+// digit, so it is refused outright rather than left to the check digit.
+const REF_NUMBER = /^(0|[1-9]\d{0,14})$/;
+
 export function parseReference(text) {
   const fields = String(text).trim().replace(/^PAY\s*/i, "").split(/[-\s]+/).filter(Boolean);
-  if (fields.length < 2 || !fields.every((f) => /^\d{1,15}$/.test(f))) return null;
+  if (fields.length < 2 || !fields.every((f) => REF_NUMBER.test(f))) return null;
   const numbers = fields.slice(0, -1).map(Number);
   if (numbers.slice(1).some((n) => n === 0) || damm(checkDigits(numbers)) !== Number(fields.at(-1))) return null;
   return [numbers[0], ...numbers.slice(1).map((d) => numbers[0] + d)];
+}
+
+/// The reference of a payment straight into a private balance: the log position of the transfer
+/// that made it, the output slot (0, the payment note) and the check digit, "48213-0-7". A
+/// claimable reference never has a 0 after its first number, so the two kinds cannot be confused.
+/// Like a claimable reference it is not a secret: the public log already shows that a transfer
+/// sits at that position, and the reference opens nothing.
+export function formatNoteReference(position) {
+  if (!Number.isSafeInteger(position) || position < 0) throw new Error("bad note position");
+  const numbers = [position, 0];
+  return [...numbers, damm(checkDigits(numbers))].join("-");
+}
+
+/// Any payment reference: { kind: "direct", position } or { kind: "claimable", indices }, or null
+/// when it is malformed or its check digit fails.
+export function parsePaymentReference(text) {
+  const fields = String(text).trim().replace(/^PAY\s*/i, "").split(/[-\s]+/).filter(Boolean);
+  if (fields.length === 3 && fields.every((f) => REF_NUMBER.test(f)) && fields[1] === "0") {
+    const numbers = [Number(fields[0]), 0];
+    if (damm(checkDigits(numbers)) !== Number(fields[2])) return null;
+    return { kind: "direct", position: numbers[0] };
+  }
+  const indices = parseReference(text);
+  return indices ? { kind: "claimable", indices } : null;
 }
 
 const sameBytes = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
@@ -123,15 +175,17 @@ const CLAIM_PAGE = 100;
 /// claimable payment. `spends` is one pair of the sender's own notes per transfer. Each transfer's
 /// first output is a one-time-key note with a real envelope; its second output is the sender's
 /// change, sealed to the sender, carrying a memo (the one-time key + this part) so the sender's
-/// wallet can show and cancel the pending payment from its own history. Returns the payment
+/// client can show and cancel the pending payment from its own history. Returns the payment
 /// reference to give the recipient once every part is accepted. A later part's pair may be given as
 /// a function, called once the part before it is accepted: it can then spend that part's change.
-export async function sendClaimable(actors, wasm, keys, account, { dpk, poolPrincipal, recipient, parts, spends, fee }) {
+export async function sendClaimable(actors, wasm, keys, account, { dpk, poolPrincipal, recipient, parts, spends, fee, orderId = null }) {
   if (parts.length !== spends.length || parts.length < 1 || parts.length > 255) throw new Error("one spend pair per part");
   const anon = await anonymousLedger();
   const fromIndex = Number((await anon.claim_status()).total);
   const firstNf = wasm.note_nullifier_hex(account.nk, spends[0][0].rho);
   const otk = oneTimeKey(wasm, account.nk, firstNf);
+  const order = orderIdBytes(orderId);
+  const box = claimNoteBox(otk.nk);
   const results = [];
   const senders = []; // the one-time identity each part was submitted from
   const envelopes = [];
@@ -139,7 +193,9 @@ export async function sendClaimable(actors, wasm, keys, account, { dpk, poolPrin
   for (let k = 0; k < parts.length; k++) {
     const [a, b] = typeof spends[k] === "function" ? await spends[k]() : spends[k];
     const nf1 = wasm.note_nullifier_hex(account.nk, a.rho);
-    const rcm = claimRcm(wasm, account.nk, nf1);
+    // the order id rides in the claim note's own ciphertext (sealed to the one-time key's box key)
+    // and is bound to its commitment through rcm, exactly as in a direct payment note
+    const { pay, rcm } = newPayment(wasm, order, claimPaySeed(account.nk, nf1));
     const v = BigInt(parts[k]);
     const change = a.v + b.v - v - BigInt(fee);
     if (change < 0n) throw new Error(`part ${k}: inputs ${a.v + b.v} do not cover ${v} + fee ${fee}`);
@@ -153,7 +209,7 @@ export async function sendClaimable(actors, wasm, keys, account, { dpk, poolPrin
     const { res, sender } = await privateTransferEx(actors, wasm, keys, {
       inputs: [{ note: a, nk: account.nk }, { note: b, nk: account.nk }],
       outputs: [
-        { v, pk: otk.pk, rcm, sealTo: null },
+        { v, pk: otk.pk, rcm, sealTo: box.publicKey, pay },
         { v: change, pk: account.pk, rcm: wasm.random_field(), sealTo: account.encPk, memo },
       ],
       fee: BigInt(fee),
@@ -170,7 +226,7 @@ export async function sendClaimable(actors, wasm, keys, account, { dpk, poolPrin
 }
 
 /// The note log by position, read in ONE bulk read, anonymously. Reading a single position would
-/// tell whoever answers the query which note the wallet cares about; reading the whole log tells
+/// tell whoever answers the query which note the client cares about; reading the whole log tells
 /// them nothing (and the claim that follows reads it in full anyway, for its Merkle path).
 async function notesByPosition(anon) {
   return new Map((await readNotes({ ledger: anon })).map((b) => [b.position, b]));
@@ -190,14 +246,17 @@ async function rebuild(anon, wasm, opened, spent) {
     const cm = wasm.note_commitment_hex(p.v, pk, rho, p.rcm);
     if (cm !== block.commitment) continue; // an envelope that does not open the note it claims to: ignore
     const nf = wasm.note_nullifier_hex(p.otkNk, rho);
-    found.push({ ...p, position, time: r.time, note: { v: p.v, rho, rcm: p.rcm, cm }, nk: p.otkNk, spent: spent.has(nf) });
+    // the claim note's sealed payment fields (written by this client version), checked against rcm
+    const sealed = openEnvelope(claimNoteBox(p.otkNk).secretKey, hexToBytes(block.ciphertext));
+    const pay = sealed && sealed.v === p.v && sealed.rcm === p.rcm && boundOrderId(wasm, sealed).bound ? sealed.pay : null;
+    found.push({ ...p, position, index: Number(r.index), time: r.time, note: { v: p.v, rho, rcm: p.rcm, cm }, nk: p.otkNk, nf, spent: spent.has(nf), ...(pay ? { pay } : {}) });
   }
   return found;
 }
 
 /// Search envelopes [from, total), NEWEST FIRST (a payment the recipient was just told about is
 /// found first), for those addressed to this vetKey. All reads are anonymous. `onProgress(done,
-/// todo)` reports the search; `spent` is the locally-built nullifier set. `scanner` (claimScan.js
+/// total)` reports the search; `spent` is the locally-built nullifier set. `scanner` (claimScan.js
 /// createScanPool, or anything with `scan(envelopes) -> Promise<indices>`) does the search at
 /// native speed across the device's cores; without one it runs here in JavaScript. Either way
 /// every match is decrypted in full by @dfinity/vetkeys before it is used.
@@ -256,11 +315,20 @@ export function groupPayments(claims) {
     g.notes.push(c);
     byKey.set(c.otkNk, g);
   }
-  return [...byKey.values()].map((g) => ({
-    ...g,
-    total: g.notes.reduce((s, c) => s + c.v, 0n),
-    complete: g.notes.length === g.parts && g.notes.every((c) => !c.spent),
-  }));
+  return [...byKey.values()].map((g) => {
+    const notes = [...g.notes].sort((a, b) => a.part - b.part);
+    const all = notes.length === g.parts && notes.every((c, k) => c.part === k);
+    return {
+      ...g,
+      notes,
+      total: notes.reduce((s, c) => s + c.v, 0n),
+      complete: all && notes.every((c) => !c.spent),
+      // every part present: the payment's reference, as the sender was given it
+      reference: all && notes.every((c) => Number.isSafeInteger(c.index)) ? formatReference(notes.map((c) => c.index)) : null,
+      // the order id, when the payer bound one (every part carries the same)
+      pay: notes.find((c) => c.pay)?.pay ?? null,
+    };
+  });
 }
 
 /// Spend two one-time notes into `to` (the claimer's own account, or the sender's when
@@ -273,7 +341,7 @@ export async function sweepOneTime(actors, wasm, keys, to, notes, { fee, envelop
   return privateTransferEx(actors, wasm, keys, {
     inputs: notes.map((c) => ({ note: c.note, nk: c.nk })),
     outputs: [
-      { v: total - BigInt(fee), pk: to.pk, rcm: wasm.random_field(), sealTo: to.encPk },
+      { v: total - BigInt(fee), pk: to.pk, rcm: sweepRcm(wasm, notes[0].nk), sealTo: to.encPk },
       { v: 0n, pk: to.pk, rcm: wasm.random_field(), sealTo: to.encPk },
     ],
     fee: BigInt(fee),
@@ -309,11 +377,15 @@ export async function pendingFromMemos(actors, wasm, owned, spent = new Set(), s
       m.w.forEach((value, part) => {
         if (seen.has(`${m.otk_nk}:${part}`)) return;
         const v = BigInt(value);
+        const box = claimNoteBox(m.otk_nk);
         for (let position = change.position - 2; position >= 0; position--) {
           const b = blocks.get(position);
           if (!b || !b.nullifiers.length) continue;
           const rho = b.nullifiers[0];
-          const rcm = claimRcm(wasm, senderNk, rho);
+          // this client version seals the claim note to the one-time key's box key; earlier ones
+          // derived its rcm from the sender's key
+          const sealed = openEnvelope(box.secretKey, hexToBytes(b.ciphertext));
+          const rcm = sealed && sealed.v === v ? sealed.rcm : claimRcm(wasm, senderNk, rho);
           if (wasm.note_commitment_hex(v, pk, rho, rcm) !== b.commitment) continue;
           const nf = wasm.note_nullifier_hex(m.otk_nk, rho);
           add({ otkNk: m.otk_nk, part, parts: m.parts, v, rcm, to: m.to, position, note: { v, rho, rcm, cm: b.commitment }, nk: m.otk_nk, spent: spent.has(nf) });

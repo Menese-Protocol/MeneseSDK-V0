@@ -1,6 +1,6 @@
-// Shielded-wallet flow logic (Menese DeFi Team).
+// Shielded-account flow logic (Menese DeFi Team).
 //
-// The wallet's private state is a spend key nk plus an X25519 note-opening key. Authenticated
+// An account's private state is a spend key nk plus an X25519 note-opening key. Authenticated
 // accounts derive both ephemerally from a principal-bound vetKey; the old browser-local account
 // format is read only long enough to migrate notes written by earlier client versions. Everything shown in the UI is
 // recovered from PUBLIC chain data plus those in-memory secrets: notes are found by trial-
@@ -49,11 +49,16 @@ function viewTag(shared) {
 // decode, and padded ones decode with the same parser.
 // 512 covers the largest note: a change note carrying a claimable-payment memo is at most 498 B
 // (20-digit amounts incl. one earlier part's value, a 63-character principal, three 32-byte hex
-// fields); a plain note is <= 174 B.
+// fields); a plain note is <= 174 B. A payment note with its payment fields (`pay`, below) is at
+// most 330 B, and a change note with the payer's record of a direct payment (`paid`) at most 445 B.
+// Every note is padded to the same length whatever it carries, so the extra fields change nothing
+// the public log shows.
 export const NOTE_PLAINTEXT_LEN = 512;
 function encodeNote(note) {
   const body = { v: note.v.toString(), rho: note.rho, rcm: note.rcm };
   if (note.claim) body.claim = note.claim; // sender-only memo for a pending claimable payment
+  if (note.pay) body.pay = note.pay; // payment fields, sealed to whoever can open this note
+  if (note.paid) body.paid = note.paid; // the payer's own record of a direct payment (change note)
   const json = new TextEncoder().encode(JSON.stringify(body));
   if (json.length > NOTE_PLAINTEXT_LEN) throw new Error(`note plaintext ${json.length} B exceeds ${NOTE_PLAINTEXT_LEN}`);
   const padded = new Uint8Array(NOTE_PLAINTEXT_LEN).fill(0x20);
@@ -64,7 +69,88 @@ function decodeNote(opened) {
   const p = JSON.parse(new TextDecoder().decode(opened));
   const note = { v: BigInt(p.v), rho: p.rho, rcm: p.rcm };
   if (p.claim) note.claim = p.claim;
+  if (p.pay && typeof p.pay === "object") note.pay = p.pay;
+  if (p.paid && typeof p.paid === "object") note.paid = p.paid;
   return note;
+}
+
+// ---- payment fields: order id and the commitment randomness that binds it ----
+// A payment note (the note a payer creates for the person paid) carries `pay = { s, o, t }` inside
+// its sealed plaintext, outside the note commitment, the way a Zcash memo rides in the encrypted
+// note plaintext (ZIP-302):
+//   s : 32 random bytes (hex), the payment seed
+//   o : the order id (hex of at most 32 bytes), or "" when the payer gave none
+//   t : 0 when the order id was text (UTF-8), 1 when it was bytes
+// The note's commitment randomness is rcm = field(SHA-512("picp-pay-rcm/v1" ‖ s ‖ t ‖ |o| ‖ o)),
+// so the order id is bound to the on-chain commitment without any change to the circuit: rcm is
+// a free witness of the transfer statement, and s keeps it uniformly random. Whoever holds s and o
+// (the payer and the person paid) can show one payment's opening to a third party (receipt.js),
+// and nobody can change the order id of a payment after it is made.
+export const ORDER_ID_MAX_BYTES = 32;
+const PAY_RCM_DOMAIN = new TextEncoder().encode("picp-pay-rcm/v1");
+
+/// An order id (a string, UTF-8, or a Uint8Array) as { bytes, t }; null for none. Throws when it is
+/// longer than 32 bytes.
+export function orderIdBytes(orderId) {
+  if (orderId === undefined || orderId === null) return null;
+  let bytes;
+  let t;
+  if (typeof orderId === "string") {
+    bytes = new TextEncoder().encode(orderId);
+    t = 0;
+  } else if (orderId instanceof Uint8Array) {
+    bytes = new Uint8Array(orderId);
+    t = 1;
+  } else {
+    throw new Error("orderId must be a string or a Uint8Array");
+  }
+  if (bytes.length === 0) return null;
+  if (bytes.length > ORDER_ID_MAX_BYTES) throw new Error(`orderId is ${bytes.length} bytes; at most ${ORDER_ID_MAX_BYTES} are allowed`);
+  return { bytes, t };
+}
+
+/// The order id as the payer gave it (string or Uint8Array) from the sealed fields, or null.
+export function orderIdFrom(pay) {
+  if (!pay || typeof pay.o !== "string" || pay.o === "") return null;
+  const bytes = hexToBytes(pay.o);
+  return pay.t === 1 ? bytes : new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
+/// The commitment randomness of a payment note with seed `seedHex` and order id `order`
+/// (orderIdBytes output, or null).
+export function paymentRcm(wasm, seedHex, order) {
+  const seed = hexToBytes(seedHex);
+  if (seed.length !== 32) throw new Error("payment seed must be 32 bytes");
+  const o = order ? order.bytes : new Uint8Array(0);
+  const buf = new Uint8Array(PAY_RCM_DOMAIN.length + 32 + 2 + o.length);
+  buf.set(PAY_RCM_DOMAIN, 0);
+  buf.set(seed, PAY_RCM_DOMAIN.length);
+  buf[PAY_RCM_DOMAIN.length + 32] = order ? order.t : 0;
+  buf[PAY_RCM_DOMAIN.length + 33] = o.length;
+  buf.set(o, PAY_RCM_DOMAIN.length + 34);
+  return wasm.field_from_seed(nacl.hash(buf));
+}
+
+/// The sealed payment fields for a new payment note, and its rcm.
+export function newPayment(wasm, order, seedHex = bytesToHex(randomBytes(32))) {
+  const pay = { s: seedHex, o: order ? bytesToHex(order.bytes) : "", t: order ? order.t : 0 };
+  return { pay, rcm: paymentRcm(wasm, seedHex, order) };
+}
+
+/// The order id a note's sealed payment fields bind, checked against the note's rcm: the fields
+/// count only when they reproduce the committed rcm. Returns { bound, orderId }.
+export function boundOrderId(wasm, note) {
+  const pay = note.pay;
+  if (!pay || typeof pay.s !== "string" || !/^[0-9a-f]{64}$/.test(pay.s) || typeof pay.o !== "string" || !/^([0-9a-f]{2}){0,32}$/.test(pay.o) || (pay.t !== 0 && pay.t !== 1)) {
+    return { bound: false, orderId: null };
+  }
+  try {
+    const order = pay.o === "" ? null : { bytes: hexToBytes(pay.o), t: pay.t };
+    if (paymentRcm(wasm, pay.s, order) !== note.rcm) return { bound: false, orderId: null };
+    return { bound: true, orderId: orderIdFrom(pay) };
+  } catch {
+    return { bound: false, orderId: null };
+  }
 }
 const bytesEqual = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -180,6 +266,8 @@ export async function readNotes(actors, { from = 0, to = null } = {}) {
         // note_root_after anchors the encrypted local cache to the chain; available on the
         // wire (NoteAudit.blockValue) — parsed here, may be absent on a minimal mock.
         noteRootAfter: map.note_root_after ? bytesToHex(new Uint8Array(map.note_root_after.Blob)) : null,
+        // the ledger's time for the block, in ms since epoch
+        time: map.timestamp ? Number(BigInt(map.timestamp.Nat) / 1_000_000n) : null,
       });
     }
   }
@@ -189,7 +277,7 @@ export async function readNotes(actors, { from = 0, to = null } = {}) {
 
 // Every commitment leaf, in position order — the Merkle-tree order that spend proofs index into.
 // Pins `to` once so the leaf set is a consistent prefix (matches a historical root).
-// Commitments by position, kept for the session. The log is append-only, so after the first read
+// Commitments by position, kept in memory while the client runs. The log is append-only, so after the first read
 // only the tail is fetched: on a phone this is the difference between the whole log per proof and a
 // few pages. A wrong cache fails closed: the ledger refuses a proof whose anchor it never had.
 const leafCache = { ledger: null, leaves: [], filling: null };
@@ -215,8 +303,8 @@ export async function leavesInOrder(actors) {
   return leafCache.leaves.slice(0, total);
 }
 
-// A wallet's birthday is the ledger log length at account creation — a note created before the
-// wallet existed cannot be its own, so first sync scans [birthday, tip] instead of from genesis.
+// An account's birthday is the ledger log length at account creation — a note created before the
+// account existed cannot be its own, so first sync scans [birthday, tip] instead of from genesis.
 // New accounts persist this alongside the seed; a seed restore without a stored birthday falls back
 // to a full-history scan (birthday 0).
 export async function recordBirthday(actors) {
@@ -227,7 +315,7 @@ export async function recordBirthday(actors) {
 // block's nullifiers EQUALS the canister's spent set (each nullifier is added via addNullifier in
 // lock-step with the appendBlock that carries it — the ledger's src/Main.mo). Computing
 // spent-ness locally removes the per-owned-note `is_nullifier_spent` point queries, which would
-// otherwise tell the node provider exactly which and how many notes the session owns.
+// otherwise tell the node provider exactly which and how many notes the account owns.
 function spentSetFrom(records) {
   const spent = new Set();
   for (const rec of records) for (const nf of rec.nullifiers) spent.add(nf);
@@ -235,7 +323,7 @@ function spentSetFrom(records) {
 }
 
 // ---- balance discovery: trial-decrypt the log tail with YOUR key ----
-// Scans only [max(birthday, cursor), tip] (cursor + wallet birthday) and merges previously-discovered
+// Scans only [max(birthday, cursor), tip] (cursor + account birthday) and merges previously-discovered
 // `cachedNotes`. Ownership is proven by recomputing the commitment; spent-ness is decided
 // LOCALLY (no nullifier queries). Returns owned-unspent notes plus the new cursor (= tip).
 /// The spent-nullifier set, built locally from the whole public log (no per-note queries).
@@ -252,18 +340,41 @@ export async function scanNotes(actors, wasm, account /* {nk, pk, encSk} */, opt
   for (const rec of tail) {
     const note = openEnvelope(account.encSk, hexToBytes(rec.ciphertext));
     if (!note) continue;
-    // The envelope opened with our key; the commitment proves the note is really addressed to our
-    // shielded pk (and that the decrypted amount is the committed amount).
+    // The envelope opened with this account's key; the commitment proves the note is really addressed
+    // to its shielded pk (and that the decrypted amount is the committed amount).
     const cm = wasm.note_commitment_hex(note.v, account.pk, note.rho, note.rcm);
     if (cm !== rec.commitment) continue;
-    candidates.push({ ...note, cm, position: rec.position });
+    candidates.push({ ...note, cm, position: rec.position, origin: rec.origin, time: rec.time, nullifiers: rec.nullifiers });
   }
   // A cached note (unspent as of `cursor`) can only be newly spent by a nullifier in the tail; a
   // tail note's spend cannot appear below its own creation. So the tail's nullifiers suffice.
   const spent = spentSetFrom(tail);
   const merged = [...cachedNotes, ...candidates];
-  const notes = merged.filter((n) => !spent.has(wasm.note_nullifier_hex(account.nk, n.rho)));
-  return { notes, scanned: tail.length, opened: candidates.length, cursor: total };
+  const notes = merged
+    .filter((n) => !spent.has(wasm.note_nullifier_hex(account.nk, n.rho)))
+    .map(({ origin, time, nullifiers, ...n }) => n);
+  return { notes, received: receivedIn(wasm, candidates), scanned: tail.length, opened: candidates.length, cursor: total };
+}
+
+// ---- incoming direct payments ----
+// A private transfer appends its two outputs to the log together, output_1 then output_2, in one
+// message, and output k's rho is the transfer's k-th nullifier. A payment to this account is an
+// output_1 this account owns while the output_2 beside it is not (it is the payer's change). Every
+// transfer this account makes itself (a payment's change, combining notes, a claim, taking a payment
+// back, moving out) has both outputs owned by it, and a claimable payment this account sends has an
+// output_1 it does not own. So the rule needs no marker in the note and also finds payments made
+// with earlier versions of this client. `candidates` are the notes opened in one scanned tail; both
+// outputs of a transfer are always in the same tail.
+function receivedIn(wasm, candidates) {
+  const owned = new Set(candidates.map((c) => c.position));
+  const out = [];
+  for (const c of candidates) {
+    if (c.origin !== "confidential_transfer" || !c.nullifiers || c.nullifiers[0] !== c.rho) continue;
+    if (owned.has(c.position + 1)) continue;
+    const { bound } = boundOrderId(wasm, c);
+    out.push({ position: c.position, v: c.v, rho: c.rho, rcm: c.rcm, time: c.time, ...(bound ? { pay: c.pay } : {}) });
+  }
+  return out;
 }
 
 // ---- compact detection stream + view-tag RECOGNITION ----
@@ -332,9 +443,9 @@ export async function retrieveMatchedPage(actors, pageStart, pageEnd) {
   return readNotes(actors, { from: pageStart, to: pageEnd });
 }
 
-// ---- encrypted local cache (IndexedDB), sealed under the vetKey session ----
+// ---- encrypted local cache (IndexedDB), sealed under a vetKey-derived key ----
 // Discovered notes + cursor + birthday persist sealed with XSalsa20-Poly1305 (nacl.secretbox)
-// under a key derived from the principal-bound vetKey session (account.cacheKey). Nothing plaintext
+// under a key derived from the principal-bound vetKey (account.cacheKey). Nothing plaintext
 // at rest. Throwaway accounts (custody ≠ ii-vetkey, or no cacheKey) write NOTHING — their custody
 // model is ephemerality. The cache is bound to the ledger canister id + host AND to a chain anchor
 // (note_root_after at the cursor): on load, a canister/host/anchor mismatch or a rewind
@@ -343,8 +454,12 @@ export async function retrieveMatchedPage(actors, pageStart, pageEnd) {
 const CACHE_KEY = "picp-readpath-cache/v1";
 // The sender-only claim memo rides along: dropping it here made a pending claimable payment vanish
 // from the sender's history (and its take-back) after the first cached sync.
-const serializeNote = (n) => ({ v: n.v.toString(), rho: n.rho, rcm: n.rcm, cm: n.cm, position: n.position, ...(n.claim ? { claim: n.claim } : {}) });
-const deserializeNote = (n) => ({ v: BigInt(n.v), rho: n.rho, rcm: n.rcm, cm: n.cm, position: n.position, ...(n.claim ? { claim: n.claim } : {}) });
+const serializeNote = (n) => ({ v: n.v.toString(), rho: n.rho, rcm: n.rcm, cm: n.cm, position: n.position, ...(n.claim ? { claim: n.claim } : {}), ...(n.pay ? { pay: n.pay } : {}), ...(n.paid ? { paid: n.paid } : {}) });
+const deserializeNote = (n) => ({ v: BigInt(n.v), rho: n.rho, rcm: n.rcm, cm: n.cm, position: n.position, ...(n.claim ? { claim: n.claim } : {}), ...(n.pay ? { pay: n.pay } : {}), ...(n.paid ? { paid: n.paid } : {}) });
+// Incoming direct payments found so far (receivedIn), kept with the notes: the notes themselves are
+// dropped from the cache once spent, the record of having been paid is not.
+const serializeReceived = (r) => ({ position: r.position, v: r.v.toString(), rho: r.rho, rcm: r.rcm, time: r.time, ...(r.pay ? { pay: r.pay } : {}) });
+const deserializeReceived = (r) => ({ position: r.position, v: BigInt(r.v), rho: r.rho, rcm: r.rcm, time: r.time, ...(r.pay ? { pay: r.pay } : {}) });
 
 function cacheable(account) {
   return account.custody === "ii-vetkey" && account.cacheKey instanceof Uint8Array && account.cacheKey.length === 32;
@@ -363,7 +478,7 @@ async function anchorAt(actors, cursor) {
   return rec && rec.noteRootAfter ? rec.noteRootAfter : null;
 }
 
-export async function saveCache(actors, account, { notes, cursor, birthday }, store) {
+export async function saveCache(actors, account, { notes, cursor, birthday, received = [] }, store) {
   if (!cacheable(account) || !store) return false;
   const anchor = await anchorAt(actors, cursor);
   const record = {
@@ -373,6 +488,7 @@ export async function saveCache(actors, account, { notes, cursor, birthday }, st
     birthday,
     anchor,
     notes: notes.map(serializeNote),
+    received: received.map(serializeReceived),
   };
   const plaintext = new TextEncoder().encode(JSON.stringify(record));
   const nonce = randomBytes(24);
@@ -405,10 +521,13 @@ export async function loadCache(actors, account, store) {
   if (total < record.cursor) return null; // rewind / reinstall
   const anchor = await anchorAt(actors, record.cursor);
   if (anchor !== record.anchor) return null; // fork / divergent chain at the cursor
-  return { notes: record.notes.map(deserializeNote), cursor: record.cursor, birthday: record.birthday };
+  // A cache written by an earlier client has no record of incoming payments: scan once from the
+  // birthday so the list of payments received is complete, then keep it from there on.
+  if (!Array.isArray(record.received)) return null;
+  return { notes: record.notes.map(deserializeNote), cursor: record.cursor, birthday: record.birthday, received: record.received.map(deserializeReceived) };
 }
 
-// ---- device-portable wallet birthday (vetKey-sealed directory record) ----
+// ---- device-portable account birthday (vetKey-sealed directory record) ----
 // The birthday is an untrusted OPTIMISATION hint (Zcash ZIP-307 semantics): correctness never
 // depends on it. Every value this client ever publishes is a PROVEN floor on the account's first
 // owned position — either a creation sample taken at/before `register` (senders can only discover
@@ -508,7 +627,7 @@ export async function publishBirthday(actors, account, b) {
   }
 }
 
-// One-call wallet sync: load the encrypted cache if present, scan only the tail
+// One-call account sync: load the encrypted cache if present, scan only the tail
 // past the cursor, persist the updated cache. On a cache MISS with birthday recovery enabled, the
 // birthday is recovered from the directory (verified, fail-safe to 0) before scanning; after a
 // genesis-complete scan the derived floor B* is (re)published — this covers new accounts,
@@ -560,8 +679,11 @@ export async function syncWallet(
     }
   }
 
-  if (store) await saveCache(actors, account, { notes: scan.notes, cursor: scan.cursor, birthday: bday }, store);
-  return { notes: scan.notes, cursor: scan.cursor, scanned: scan.scanned, opened: scan.opened, fromCache: !!cached, birthday: bday, recovery: recovery ? recovery.status : null };
+  const byPosition = new Map();
+  for (const r of [...(cached ? cached.received : []), ...scan.received]) byPosition.set(r.position, r);
+  const received = [...byPosition.values()].sort((a, b) => a.position - b.position);
+  if (store) await saveCache(actors, account, { notes: scan.notes, cursor: scan.cursor, birthday: bday, received }, store);
+  return { notes: scan.notes, received, cursor: scan.cursor, scanned: scan.scanned, opened: scan.opened, fromCache: !!cached, birthday: bday, recovery: recovery ? recovery.status : null };
 }
 
 // IndexedDB-backed store for the browser; tests inject their own {get,set,delete}. Kept tiny and
@@ -618,9 +740,10 @@ export async function shield(actors, wasm, keys, account, valueE8s) {
 // ---- private transfer, general form ----
 // inputs : two { note: {v, rho, rcm, cm}, nk } — `nk` is the key that owns that note (the account's
 //          own key, or a claimable payment's one-time key).
-// outputs: two { v, pk, rcm, sealTo, memo } — `sealTo` is the X25519 key the note is sealed to, or
-//          null to seal it to a throwaway key (a claimable note: its opening travels in the IBE
-//          envelope instead); `memo` is a sender-only claim memo carried inside the sealed note.
+// outputs: two { v, pk, rcm, sealTo, memo, pay, paid } — `sealTo` is the X25519 key the note is
+//          sealed to, or null to seal it to a throwaway key; `memo` is a sender-only claim memo,
+//          `pay` a payment note's sealed payment fields, `paid` the payer's record of a direct
+//          payment, each carried inside the sealed note.
 // envelope / bindingHex: the claim envelope and the recipient_binding the proof must carry for it
 //          (envelope.js claimBinding). With none given, a decoy is attached: EVERY private
 //          transfer carries an envelope, so a claimable payment looks like any other transfer.
@@ -653,7 +776,7 @@ export async function privateTransferEx(actors, wasm, keys, { inputs, outputs, f
   const record = (o, k) => ({
     commitment: hexToBytes(k === 0 ? tx.cm_out1_hex : tx.cm_out2_hex),
     ephemeral_key: randomBytes(32),
-    note_ciphertext: sealNote(o.sealTo ?? nacl.box.keyPair().publicKey, { v: o.v, rho: rhos[k], rcm: o.rcm, claim: o.memo }),
+    note_ciphertext: sealNote(o.sealTo ?? nacl.box.keyPair().publicKey, { v: o.v, rho: rhos[k], rcm: o.rcm, claim: o.memo, pay: o.pay, paid: o.paid }),
   });
   const args = {
     anchor: hexToBytes(tx.anchor_hex),
@@ -677,21 +800,29 @@ export async function privateTransferEx(actors, wasm, keys, { inputs, outputs, f
 
 // ---- private transfer: two owned notes -> sealed note to ANY registered principal + change ----
 // `recipient` is a directory entry: { shielded_pk, enc_pk (hex) }. `extra` may carry an
-// { envelope, bindingHex } pair (a decoy when the pool requires envelopes on every transfer).
+// { envelope, bindingHex } pair (a decoy when the pool requires envelopes on every transfer), and
+// `payment: { to, orderId }` when this is a payment to the principal `to` (text): the recipient's
+// note then carries the payment fields and an order-id-binding rcm (newPayment), and the payer's
+// change note records the payment (`paid`), so the payer can make a receipt for it later from the
+// public log and its own key alone.
 export async function privateTransfer(actors, wasm, keys, account, inNotes, recipient, sendE8s, feeE8s, extra = {}) {
   const total = inNotes[0].v + inNotes[1].v;
   if (total < sendE8s + feeE8s) throw new Error("insufficient shielded balance");
-  const { res, sender } = await privateTransferEx(actors, wasm, keys, {
+  const payment = extra.payment ? newPayment(wasm, orderIdBytes(extra.payment.orderId)) : null;
+  const { res, sender, tx } = await privateTransferEx(actors, wasm, keys, {
     inputs: [{ note: inNotes[0], nk: account.nk }, { note: inNotes[1], nk: account.nk }],
     outputs: [
-      { v: sendE8s, pk: recipient.shielded_pk, rcm: wasm.random_field(), sealTo: hexToBytes(recipient.enc_pk) },
-      { v: total - sendE8s - feeE8s, pk: account.pk, rcm: wasm.random_field(), sealTo: account.encPk },
+      { v: sendE8s, pk: recipient.shielded_pk, rcm: payment ? payment.rcm : wasm.random_field(), sealTo: hexToBytes(recipient.enc_pk), pay: payment ? payment.pay : undefined },
+      {
+        v: total - sendE8s - feeE8s, pk: account.pk, rcm: wasm.random_field(), sealTo: account.encPk,
+        paid: payment ? { to: extra.payment.to, v: sendE8s.toString(), ...payment.pay } : undefined,
+      },
     ],
     fee: feeE8s,
     envelope: extra.envelope ?? null,
     bindingHex: extra.bindingHex ?? ZERO_FIELD,
   });
-  return { res, sender };
+  return { res, sender, tx, payment };
 }
 
 // ---- unshield: bind the exact public ICRC account inside the proof, then pay it atomically ----

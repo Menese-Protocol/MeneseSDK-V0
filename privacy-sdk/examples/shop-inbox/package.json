@@ -1,0 +1,21 @@
+{
+  "name": "privacy-shop-inbox",
+  "private": true,
+  "type": "module",
+  "description": "A shop's payment inbox on the Privacy SDK: marks an order paid when its private payment arrives",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "start": "node --import tsx shop.ts",
+    "verify": "node --import tsx verify.ts"
+  },
+  "dependencies": {
+    "@dfinity/agent": "^3.4.3",
+    "@dfinity/auth-client": "^3.4.3",
+    "@dfinity/candid": "^3.4.3",
+    "@dfinity/identity": "^3.4.3",
+    "@dfinity/principal": "^3.4.3",
+    "@dfinity/vetkeys": "^0.4.0",
+    "tweetnacl": "^1.0.3",
+    "tsx": "^4.20.0"
+  }
+}

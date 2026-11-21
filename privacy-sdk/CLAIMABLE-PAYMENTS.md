@@ -20,6 +20,11 @@ payment removes that step: it is addressed to the principal itself.
    recipient's principal as the identity. That is the identity the directory derives the
    recipient's own vetKey for, so the recipient's vetKey opens it. The recipient needs no new key
    and no registration to receive.
+   The note itself (its ciphertext on the log) is sealed to a box key derived from the one-time
+   key, `SHA-512("picp-claim-note-box/v1" ‖ otk_nk)`. It carries the payment's order id, if any,
+   and the seed its `rcm` is derived from, which binds the order id to the note (see
+   [PAYMENTS.md](./PAYMENTS.md)). Only the recipient, after opening the envelope, and the sender can
+   read it.
 3. **Binding.** The envelope travels with the transfer. The proof's public `recipient_binding`
    input is `SHA-256("picp-claim-envelope/v1" ‖ ledger principal ‖ envelope)` with the top byte
    cleared, so an envelope cannot be swapped or removed without the proof failing. This uses the
@@ -29,7 +34,9 @@ payment removes that step: it is addressed to the principal itself.
 5. **Claim.** On sign-in, the recipient's client opens envelopes with the recipient's vetKey,
    rebuilds each note, checks its commitment against the ledger, and spends the one-time notes
    into the recipient's own shielded address.
-6. **Take back.** The sender spends the same one-time notes back to themselves. Whichever spend
+6. **Take back.** The sender spends the same one-time notes back to themselves. A claim and a
+   take-back both create their first note with a randomness derived from the one-time key
+   (`picp-claim-sweep-rcm/v1`), so a claimed payment's receipt can show where it landed. Whichever spend
    arrives first succeeds; the other is rejected as `nullifier-spent`.
 
 A transfer always spends exactly two notes, so a recipient who holds nothing else needs two
@@ -61,7 +68,8 @@ The recipient searches the claim log once, at their first sign-in. After they re
 payments to them are ordinary private notes.
 
 - **By reference.** `sendPrivately` returns a payment reference such as `6-1-9`: the claim-log
-  index of the first envelope, the offsets of the other parts, and a Damm check digit. The
+  index of the first envelope, the offsets of the other parts, and a Damm check digit (a direct
+  payment's reference has `0` in the second place instead, see [PAYMENTS.md](./PAYMENTS.md)). The
   reference opens nothing without the recipient's vetKey and shows no amount, so it can be sent
   over any channel. `claimsByReference` (`src/zk/claims.js`) reads only the log pages holding
   those envelopes, anonymously.

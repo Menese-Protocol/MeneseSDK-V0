@@ -35,6 +35,8 @@ The ledger charges the same fees to every app that uses it:
 | `src/engine/plan.ts` | plans the steps an action needs (each transfer spends two notes, so small top-ups and merges are added and quoted up front) |
 | `src/types.ts` | data types (progress, fees, quotes, activity) and ICP amount helpers |
 | `src/enabled.ts` | one anonymous query: has this principal turned on private balance? |
+| `src/receipt.ts` | `verifyReceipt`: checks a payment receipt with anonymous reads and no keys |
+| `src/node.js` | the same engine in Node, for a shop's server: worker threads, wasm and keys from disk, cache in files |
 | `src/mainnet.ts` | the mainnet network settings |
 | `src/zk/` | the client underneath: notes, proofs, transfers, claim envelopes, key loading |
 | `src/zk/prover-pkg/` | the prover, compiled to wasm from `demo-frontend/prover-wasm` in the ledger repository |
@@ -42,6 +44,8 @@ The ledger charges the same fees to every app that uses it:
 | `tools/split-zk-keys.mjs` | prepares the proving keys for your app to serve |
 | `tools/build-wasm.sh` | rebuilds both wasm modules from source, byte for byte |
 | `CLAIMABLE-PAYMENTS.md` | how claimable payments work: envelopes, claiming, taking back, finding a payment |
+| `PAYMENTS.md` | payment references, order ids, the shop inbox and receipts |
+| `examples/shop-inbox/` | a Node shop that marks orders paid as their payments arrive |
 
 ## Install
 
@@ -100,6 +104,31 @@ is described in [CLAIMABLE-PAYMENTS.md](./CLAIMABLE-PAYMENTS.md).
 
 `onProgress` receives each step (`keys`, `prepare`, `approve`, `prove`, `submit`, `confirm`) with
 real progress, so you can show the user where the action is.
+
+## Accept payments in a shop
+
+1. **Checkout.** The customer pays with the order id; it is sealed so only the shop can read it,
+   and bound to the payment so nobody can change it later:
+   ```ts
+   const { reference } = await engine.sendPrivately(shop, price, onProgress, { orderId: "ORD-10023" });
+   ```
+   Every payment returns a `reference` (`48213-0-7`, or `6-1-9` for a claimable payment) with a
+   check digit. It shows no amount and opens nothing, so it can go in an email or a chat.
+2. **Inbox.** The shop runs its own engine with its own identity, in the browser or on its server
+   (`createNodeEngine` in `src/node.js`), and turns on private balance once with `enable()`.
+   `snapshot.received` lists each payment with its `reference`, `amountE8s`, `orderId`,
+   `receivedAt` and `status`; `engine.onPayment(listener)` fires once per payment when it is in the
+   shop's private balance.
+3. **Release the order** when the payment's `status` is `"paid"` and its amount covers the price.
+   A `"claimable"` payment (sent before the shop turned on private balance) is claimed with
+   `engine.claim(claimId)` first; until then the payer can still take it back.
+4. **Receipt for disputes.** `engine.receipt(reference)` (payer or shop) exports that one
+   payment's opening as JSON. `verifyReceipt(receipt)` checks it for anyone, with anonymous reads
+   and no keys: amount, principal paid, order id and reference must all match the ledger. It
+   reveals that payment and nothing else.
+
+[`examples/shop-inbox`](./examples/shop-inbox) does all four in Node. How it works:
+[PAYMENTS.md](./PAYMENTS.md).
 
 ## Rebuild the wasm yourself
 
