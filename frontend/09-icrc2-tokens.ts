@@ -111,7 +111,7 @@ async function main() {
   const tokens = await actor.getSupportedICPTokens();
   console.log(`\nSupported ICP tokens (${tokens.length}):`);
   for (const t of tokens) {
-    console.log(`  ${t.symbol} (${t.name}) — ${t.canisterId} [${t.type_}]`);
+    console.log(`  ${t.symbol} (${t.name}) — ${t.canisterId} [${t.type}]`);
   }
 }
 

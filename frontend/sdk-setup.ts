@@ -324,7 +324,7 @@ export const idlFactory = ({ IDL }: any) => {
     getICPBalanceFor: IDL.Func([IDL.Principal], [ResultNat64], []),
     getICRC1BalanceFor: IDL.Func([IDL.Principal, IDL.Text], [ResultNat], []),
     getICRC1TokenInfo: IDL.Func([IDL.Text], [IDL.Variant({ ok: IDL.Record({ canisterId: IDL.Text, decimals: IDL.Nat8, fee: IDL.Nat, name: IDL.Text, symbol: IDL.Text }), err: IDL.Text })], []),
-    getSupportedICPTokens: IDL.Func([], [IDL.Vec(IDL.Record({ name: IDL.Text, symbol: IDL.Text, canisterId: IDL.Text, type_: IDL.Text, category: IDL.Text }))], ["query"]),
+    getSupportedICPTokens: IDL.Func([], [IDL.Vec(IDL.Record({ name: IDL.Text, symbol: IDL.Text, canisterId: IDL.Text, type: IDL.Text, category: IDL.Text }))], ["query"]),
     getMyTrc20Balance: IDL.Func([IDL.Text], [ResultNat], []),     // contractAddress
 
     // === SEND — ALL CHAINS (1 action) ===
@@ -840,7 +840,7 @@ export const idlFactory = ({ IDL }: any) => {
           action: IDL.Variant({
             AddLP: IDL.Record({ amountUSD: IDL.Nat, poolAddress: IDL.Text }),
             RemoveLP: IDL.Record({ percentage: IDL.Nat, poolAddress: IDL.Text }),
-            Send: IDL.Record({ amount: IDL.Nat, recipient: IDL.Text, token: IDL.Text }),
+            Custom: IDL.Text,
             Swap: IDL.Record({ amountIn: IDL.Nat, tokenIn: IDL.Text, tokenOut: IDL.Text }),
           }),
           cronPattern: IDL.Text, executedCount: IDL.Nat,
@@ -898,7 +898,7 @@ export const idlFactory = ({ IDL }: any) => {
           action: IDL.Variant({
             AddLP: IDL.Record({ amountUSD: IDL.Nat, poolAddress: IDL.Text }),
             RemoveLP: IDL.Record({ percentage: IDL.Nat, poolAddress: IDL.Text }),
-            Send: IDL.Record({ amount: IDL.Nat, recipient: IDL.Text, token: IDL.Text }),
+            Custom: IDL.Text,
             Swap: IDL.Record({ amountIn: IDL.Nat, tokenIn: IDL.Text, tokenOut: IDL.Text }),
           }),
           cronPattern: IDL.Text, executedCount: IDL.Nat,
@@ -941,10 +941,11 @@ export const idlFactory = ({ IDL }: any) => {
         rule_id: IDL.Text,
         stage: IDL.Variant({
           ACTIVATED: IDL.Null, ADDRESS_GENERATED: IDL.Null, BROADCASTING: IDL.Null,
-          BUILT_TX: IDL.Null, COMPLETED: IDL.Null, ESTIMATING_FEE: IDL.Null,
-          FAILED: IDL.Null, FETCHING_UTXOS: IDL.Null, INITIATED: IDL.Null,
-          PENDING: IDL.Null, QUOTE_FETCHED: IDL.Null, RECEIVED_DEPOSIT: IDL.Null,
-          SENT: IDL.Null, SIGNING: IDL.Null, TRIGGERED: IDL.Null, VALIDATED: IDL.Null,
+          BUILT_TX: IDL.Null, CHECKED: IDL.Null, CONFIG_UPDATED: IDL.Null,
+          CONFIRMED: IDL.Null, DCA_EXECUTED: IDL.Null, EXECUTING: IDL.Null,
+          FAILED: IDL.Null, PNL_REPORTED: IDL.Null, POSITION_CREATED: IDL.Null,
+          RULE_CREATED: IDL.Null, SENT: IDL.Null, SIGNING: IDL.Null,
+          TRIGGERED: IDL.Null, VALIDATED: IDL.Null,
         }),
         ts: IDL.Int,
         tx_id: IDL.Opt(IDL.Text),

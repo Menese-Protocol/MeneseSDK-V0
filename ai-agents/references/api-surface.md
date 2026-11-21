@@ -127,7 +127,7 @@ type ScheduledAction = variant { Swap: record { tokenIn: text; tokenOut: text; a
 type APYMigrationConfig = record { cooldownHours: nat; currentPoolAddress: text; lastMigrated: int; maxMigrationCostPct: float64; minApyDelta: float64; targetPools: vec text };
 type VolatilityConfig = record { action: VolatilityAction; cooldownMinutes: nat; direction: variant { Above; Below }; lastTriggered: int; tokenSymbol: text; triggerStdDev: float64 };
 type VolatilityAction = variant { Alert; Buy: record { amountUSD: nat }; Sell: record { percentage: nat }; ExitLP: record { poolAddress: text } };
-type ExecutionStage = variant { ACTIVATED; ADDRESS_GENERATED; BROADCASTING; BUILT_TX; COMPLETED; ESTIMATING_FEE; FAILED; FETCHING_UTXOS; INITIATED; PENDING; QUOTE_FETCHED; RECEIVED_DEPOSIT; SENT; SIGNING; TRIGGERED; VALIDATED };
+type ExecutionStage = variant { ACTIVATED; ADDRESS_GENERATED; BROADCASTING; BUILT_TX; CHECKED; CONFIG_UPDATED; CONFIRMED; DCA_EXECUTED; EXECUTING; FAILED; PNL_REPORTED; POSITION_CREATED; RULE_CREATED; SENT; SIGNING; TRIGGERED; VALIDATED };
 type ExecutionLog = record { error: opt text; intent_hash: text; rule_id: text; stage: ExecutionStage; ts: int; tx_id: opt text };
 ```
 

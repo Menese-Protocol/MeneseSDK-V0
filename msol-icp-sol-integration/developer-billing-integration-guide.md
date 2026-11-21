@@ -58,14 +58,18 @@ Purchase a subscription tier on the MeneseSDK canister (`urs2a-ziaaa-aaaad-aembq
 
 ```bash
 # Example: purchase Developer tier with ICP
-# First, approve the SDK canister to pull ICP from your account:
+# First, approve the SDK canister to pull ICP from your account. The gateway pulls the tier's price
+# (getGatewayPricing: priceMicroUsd) converted at the current ICP price, in e8s; the allowance must also cover the
+# ledger fee (10_000 e8s). Example: $45.50 at an ICP price of $5.00 is 910_000_000 e8s (9.1 ICP); the approval
+# below adds a margin for the price moving.
 dfx canister call ryjl3-tyaaa-aaaaa-aaaba-cai icrc2_approve '(record {
   spender = record { owner = principal "urs2a-ziaaa-aaaad-aembq-cai" };
-  amount = 650_000;
-})'
+  amount = 920_000_000;
+})' --network ic
 
-# Then purchase:
-dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchasePackage '(variant { Developer }, "ICP", 6_500_000 : nat)'
+# Then purchase (arguments: tier, payment token):
+dfx canister call urs2a-ziaaa-aaaad-aembq-cai purchaseGatewayPackage '(variant { Developer }, "ICP")' --network ic
+# Too small an allowance is refused with "Insufficient allowance: <n>. Approve at least <amount>".
 ```
 
 ### Step 2: Register Your Backend Canister

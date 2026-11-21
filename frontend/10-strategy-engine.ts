@@ -147,7 +147,7 @@ async function main() {
   console.log(`\nExecution logs (${logs.length}):`);
   for (const log of logs.slice(0, 10)) { // show latest 10
     const stage = Object.keys(log.stage)[0];
-    const status = stage === "COMPLETED" ? "OK" : stage;
+    const status = stage === "SENT" ? "OK" : stage;
     console.log(`  [${status}] Rule ${log.rule_id}: ${stage} — tx: ${log.tx_id.length > 0 ? log.tx_id[0] : "n/a"}`);
     if (log.error.length > 0) {
       console.log(`    Error: ${log.error[0]}`);
