@@ -1,0 +1,3145 @@
+[
+ {
+  "name": "aaveSupplyEth",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Aave V3"
+ },
+ {
+  "name": "aaveSupplyToken",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Aave V3"
+ },
+ {
+  "name": "aaveWithdrawEth",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Aave V3"
+ },
+ {
+  "name": "aaveWithdrawToken",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Aave V3"
+ },
+ {
+  "name": "addGatewayPaymentToken",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "addGatewayWhitelist",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "addICPLiquidity",
+  "query": false,
+  "cost": "no action",
+  "availability": "refused",
+  "group": "Not available"
+ },
+ {
+  "name": "addLiquidity",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "addLiquidityETH",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "addOrgOwner",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "addStrategyRule",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Strategy / Automation"
+ },
+ {
+  "name": "adminClearDeveloperSessions",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGetAccount",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGetAllAccounts",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGetAllDeposits",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGetAllRules",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGetAllSessions",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminGrantSubscription",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "adminPauseAllRules",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "approveCanisterBinding",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "approveICRC2",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "buildAndSignEvmTransaction",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Signing"
+ },
+ {
+  "name": "buildAndSignEvmTxWithData",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Signing"
+ },
+ {
+  "name": "burnSuiTokens",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "buyBundle",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "calculateSuiMinAmountOut",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "callEvmContractRead",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Custom EVM Contracts"
+ },
+ {
+  "name": "callEvmContractWrite",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Custom EVM Contracts"
+ },
+ {
+  "name": "checkPaymentRequest",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "claimEarnings",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "claimTestCredits",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "cleanupBitcoinReservations",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "cleanupLitecoinReservations",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "clearAllCaches",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "clearEvmCache",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "clearSolanaAddressCache",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "clearStrategyPriceCache",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "clearSuiCache",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "clearTonCache",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "createApp",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "createCanisterSolanaAtaForMint",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "createCanisterSolanaAtaForMintWithProgram",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "createMyAta",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "createMySolanaAtaForMint",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "createMySolanaAtaForMintWithProgram",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "createOrg",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "createPaymentRequest",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "debugGetMySolanaAta",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "debugPdaDerivation",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "debugTokenProgram",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "deleteStrategyRule",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Strategy / Automation"
+ },
+ {
+  "name": "depositGatewayCredits",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "deriveSolanaAtaWithProgram",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "dumpSolanaBorshWriterBehavior",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "estimateBitcoinFee",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "executeICPDexSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "executeMinswapSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "executeSend",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "executeSuiSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "exp_deriveSolanaTokenTransferAccounts",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_inspectSolanaTokenTransferAccounts",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_rollbackEvmNonce",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "exp_signAddLiquidity",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signAddLiquidityETH",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signAptosTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signBtcTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signCardanoSend",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signCardanoTokenSend",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signClmmSwapUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signCloakTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signDirectSwapUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signEvmSend",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signEvmSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signLtcTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signMinswapSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signNearTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signRaydiumSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signRaydiumSwapUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signRemoveLiquidity",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signRemoveLiquidityETH",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signSolTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signSplTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signSplTransferSafeChecked",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signSplTransferSafeDerived",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signSuiTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signThorTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signTonTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signTronTransfer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signXrpIOUPayment",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signXrpPayment",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signXrpSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "exp_signXrpTrustline",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · exp_ Experimental"
+ },
+ {
+  "name": "forceClearEvmNonceState",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "forceReleaseEvmNonceLock",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "forceSetEvmNonce",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "formatSuiTokenType",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Solana Helpers"
+ },
+ {
+  "name": "getAllAddresses",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getAllBalances",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getAllMinswapTokens",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getAllPools",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getAppBalance",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getAppEarnings",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getAppRevenue",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getAptosBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getATokenBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · DeFi Positions"
+ },
+ {
+  "name": "getAWethBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · DeFi Positions"
+ },
+ {
+  "name": "getBaseTokens",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getBitcoinAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getBitcoinBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getBitcoinBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getBitcoinDustLimit",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinFeePercentiles",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinMaxSendAmount",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinRecommendedFeeRate",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinReservationCount",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinUTXOs",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getBitcoinUTXOsFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getCachedPrices",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getCanisterBitcoinAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterCloakAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterDeveloper",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getCanisterEvmAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterLitecoinAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterNearBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterNearPubKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterSolanaAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterSuiAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterTonAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterTronAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCanisterXrpAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · Canister Addresses"
+ },
+ {
+  "name": "getCardanoBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getCardanoWalletBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getChainNetworks",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getChainStats",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "getClmmPool",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "CLMM Pools"
+ },
+ {
+  "name": "getClmmQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getCloakAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getCloakBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getCloakBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getCloakUTXOs",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getETHQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getEvmAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getEvmBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getEvmCacheSize",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "getEvmNonceState",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "getEvmTransactionReceipt",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "getFreeEvmContracts",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getFreeTier",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getGasOracleCacheSize",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "getGatewayPricing",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getGatewayRevenue",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "getHlBuilderState",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getHyperliquid",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getICPBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getICPBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getICPDexPools",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "DeFi · ICP DEX Liquidity"
+ },
+ {
+  "name": "getICPDexQuote",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getICPDexTokens",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "DeFi · ICP DEX Liquidity"
+ },
+ {
+  "name": "getICPLPPositions",
+  "query": false,
+  "cost": "one action",
+  "availability": "refused",
+  "group": "Not available"
+ },
+ {
+  "name": "getICPRebalanceRecommendations",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · ICP DEX Liquidity"
+ },
+ {
+  "name": "getIcpSolTreasuryAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getICRC1Balance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getICRC1BalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getICRC1Balances",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getICRC1TokenInfo",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getICRC2Allowance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getLitecoinAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getLitecoinBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getLitecoinBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getLitecoinDustLimit",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getLitecoinMaxSendAmount",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getLitecoinReservationCount",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getLitecoinUTXOs",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getLitecoinUTXOsFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "getMinswapQuote",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getMinswapTokens",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getMsolTreasuryAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getMyAptosAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyBalance",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getMyBitcoinAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyCanisterUsage",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getMyCardanoAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyCloakAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyDeveloperAccount",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getMyDeveloperKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getMyEvmAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyEvmBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMyGatewayAccount",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getMyGatewayDeposits",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "getMyIcpSwapOwed",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "getMyIcrcWallet",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "getMyLitecoinAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyNearAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyNearBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMyNearPubKey",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "NEAR Account Info"
+ },
+ {
+  "name": "getMySession",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getMySolanaAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMySolanaAta",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMySolanaAtaWithProgram",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getMySolanaBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMyStrategyRules",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Strategy / Automation"
+ },
+ {
+  "name": "getMySuiAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMySuiBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMySuiCoins",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "SUI Coins"
+ },
+ {
+  "name": "getMyThorAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyTonAccountInfo",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "TON Account Info"
+ },
+ {
+  "name": "getMyTonAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyTonBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMyTrc20Balance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getMyUsage",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getMyXrpAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getMyXrpBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getNearUserAccountInfo",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "NEAR Account Info"
+ },
+ {
+  "name": "getPairAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "getPaymentRequest",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getPendingFees",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getPlatformStats",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getPlatformSwitches",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getPoolCount",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getPoolReserves",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "getPoolStats",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getPriceBook",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getQuote",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getRaydiumQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getRaydiumSwapMessageDiagnostics",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getReceipt",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getRegisteredUsers",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getRouteHeld",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getRoutingSuggestions",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getSolanaAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getSolanaBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getSolanaTokenProgramIds",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Solana Helpers"
+ },
+ {
+  "name": "getStablecoins",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getStEthAllowance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · DeFi Positions"
+ },
+ {
+  "name": "getStEthBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · DeFi Positions"
+ },
+ {
+  "name": "getStrategyLogs",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Strategy / Automation"
+ },
+ {
+  "name": "getStrategyPriceCacheStats",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "System"
+ },
+ {
+  "name": "getSuiAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getSuiBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getSuiCacheSize",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "getSuiCoinsFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "SUI Coins"
+ },
+ {
+  "name": "getSuiPackageConfig",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "SUI Package Config"
+ },
+ {
+  "name": "getSuiSwapQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getSupportedChains",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getSupportedICPTokens",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getSupportedTokens",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getSwapErrorMessage",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getSystemLogs",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "System"
+ },
+ {
+  "name": "getThorBalance",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getThorBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getTokenCount",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getTokenInfo",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "getTokenQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getTokenQuoteMultiHop",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getTonAccountInfoFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "TON Account Info"
+ },
+ {
+  "name": "getTonAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "getTonBalanceFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getTonCacheSize",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "getTotalCacheSize",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "getTrc20Balance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · For Any Address/Principal"
+ },
+ {
+  "name": "getTronAddress",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Addresses · User Addresses"
+ },
+ {
+  "name": "getTrxBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · User Balances"
+ },
+ {
+  "name": "getUsage",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getUsageRange",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getUsageTip",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "getUSDCQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "getWstEthBalance",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Balances · DeFi Positions"
+ },
+ {
+  "name": "getXrpAddressFor",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Addresses · For Specific Principal"
+ },
+ {
+  "name": "hasEvmNonceState",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "hasPathThrough",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "hasTonApiKey",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "TON Configuration"
+ },
+ {
+  "name": "health",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "System"
+ },
+ {
+  "name": "hlApproveBuilderFee",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "hlPlaceOrders",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "hlSyncBuilderFees",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "icpSolPoolDeposit",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "initAutomation",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "initGateway",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "invalidateEvmNonce",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "invalidateGasQuote",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "isClmmPoolReady",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "CLMM Pools"
+ },
+ {
+  "name": "isEvmNonceLocked",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "isGatewayEnabled",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "issueGrant",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "isTestGateway",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "isTokenSupported",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "isValidBitcoinAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Address Validation"
+ },
+ {
+  "name": "isValidLitecoinAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Address Validation"
+ },
+ {
+  "name": "isValidSuiAddress",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Address Validation"
+ },
+ {
+  "name": "isValidTonAddress",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Address Validation"
+ },
+ {
+  "name": "ledgerFingerprint",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "listApiKeys",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "listCachedEvmNonceAddresses",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Cache Management"
+ },
+ {
+  "name": "listCanisterBindings",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "listClmmPools",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "CLMM Pools"
+ },
+ {
+  "name": "listPoolsForToken",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "lockMyTokens",
+  "query": false,
+  "cost": "no action",
+  "availability": "refused",
+  "group": "Not available"
+ },
+ {
+  "name": "mintSuiTokens",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "msolDeposit",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "myApps",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "myOrgs",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "poolExists",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "preflightEvmAddLiquidityGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightEvmApproveGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightEvmContractWriteGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightEvmRemoveLiquidityGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightEvmSendGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightEvmSwapGas",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "preflightGasPrice",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Gas Preflight"
+ },
+ {
+  "name": "publishPriceVersion",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "publishShareTiers",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "purchaseGatewayPackage",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "pushPrices",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "quoteRoute",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "quoteRouteFees",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "quoteSend",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "redeemGrant",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "regenerateDeveloperKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "registerApiKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "registerCloakDeposit",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "registerDeveloperCanister",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "registerSession",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "registerUserForBilling",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "removeFreeFeeRule",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "removeGatewayWhitelist",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "removeICPLiquidity",
+  "query": false,
+  "cost": "no action",
+  "availability": "refused",
+  "group": "Not available"
+ },
+ {
+  "name": "removeLiquidity",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "removeLiquidityETH",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Uniswap V2 Liquidity"
+ },
+ {
+  "name": "replayLedger",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "requestCanisterBinding",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "requestHostedGrant",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "resyncEvmNonce",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "retryMyIcpSwapPayout",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "retryRouteHeld",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "revokeAllApiKeys",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "revokeApiKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "revokeGrant",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "rotateApiKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "sendAptos",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendBitcoin",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendBitcoinDynamicFee",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendBitcoinWithFee",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendBitcoinWithNetwork",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendCardanoTransaction",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendCloak",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendEvmNativeTokenAutonomous",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendICP",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendICRC1",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendLitecoin",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendLitecoinWithFee",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendNearTransfer",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "sendNearTransferFromUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendSolTransaction",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendSui",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendSuiMax",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendSuiWithNetwork",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendThor",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTon",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTonSimple",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTonTestnet",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTonWithComment",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTrc20",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendTrx",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendXrpAutonomous",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "sendXrpIOU",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "setApiKeyPolicy",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setAppFee",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setAppMode",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setChainEndpoint",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setChainNetwork",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setDevPlatform",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setFreeAppFee",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setFreeEvmOneTx",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setFreeEvmRpc",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setFreeFeeRate",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setFreeFeeRule",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setFreeTier",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setGatewayEnabled",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setHostedGrantRule",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setHyperliquidOn",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setLegacySessions",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setRouteFee",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setRouteFeeCap",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setSuiPackageConfig",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "setTestGateway",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "settleShortPayment",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "setTonApiKey",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "signAptosTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signCardanoTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signNearTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signSolSwapTxsOffchain",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Offchain Pattern"
+ },
+ {
+  "name": "signSolSwapTxsRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signSolTransferOffchain",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Offchain Pattern"
+ },
+ {
+  "name": "signSolTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signSuiTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signTonTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signTrxTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "signXrpTransferRelayer",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Sign-Only · Relayer Pattern"
+ },
+ {
+  "name": "simulateSignedSolanaTxBase64",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "solanaAccountExists",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Address Validation"
+ },
+ {
+  "name": "stakeEthForStEth",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Lido Staking"
+ },
+ {
+  "name": "swapClmm",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "swapClmmUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "swapETHForUSDC",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "swapFromAccount",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "swapRaydiumApi",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "swapRaydiumApiUser",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "swapRaydiumNative",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "swapTokens",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "swapTokensMultiHop",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "swapUSDCForETH",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ },
+ {
+  "name": "sweepUnsettledCharges",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "syncBitcoinUTXOs",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "syncLitecoinUTXOs",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "UTXO Management"
+ },
+ {
+  "name": "testAtaDerivation",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "testFaucet",
+  "query": false,
+  "cost": "no action",
+  "availability": "refused",
+  "group": "Not available"
+ },
+ {
+  "name": "testSpecificAta",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "testUsdcTokenProgram",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "topUpCredits",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "transferFromICRC2",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "transferSplToken",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "transferSuiCoin",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Send · All Chains"
+ },
+ {
+  "name": "transform",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "transformSuiResponse",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "unbindCanister",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "unregisterDeveloperCanister",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "unregisterUserFromBilling",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "unwrapWstEth",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Lido Staking"
+ },
+ {
+  "name": "updateStrategyRuleStatus",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Strategy / Automation"
+ },
+ {
+  "name": "validateDeveloperKey",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Developer / Billing"
+ },
+ {
+  "name": "validateSwapPath",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Token / Pool Info"
+ },
+ {
+  "name": "verifyEvmAddressFormat",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "verifyLastEvmTransaction",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "EVM Nonce / Gas Management"
+ },
+ {
+  "name": "verifyTonWalletCode",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "TON Configuration"
+ },
+ {
+  "name": "verifyUsageLog",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "version",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "System"
+ },
+ {
+  "name": "whoami",
+  "query": true,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "withdrawAppRevenue",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "withdrawGatewayFees",
+  "query": false,
+  "cost": "no action",
+  "availability": "controllers",
+  "group": "Gateway controllers only"
+ },
+ {
+  "name": "wrapStEth",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "DeFi · Lido Staking"
+ },
+ {
+  "name": "xrpFindPaths",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Quotes"
+ },
+ {
+  "name": "xrpGetAccountLines",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "XRP Operations"
+ },
+ {
+  "name": "xrpGetAmmInfo",
+  "query": false,
+  "cost": "no action",
+  "availability": "everyone",
+  "group": "XRP Operations"
+ },
+ {
+  "name": "xrpSetTrustline",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Token Operations"
+ },
+ {
+  "name": "xrpSignIOUPayment",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "xrpSignPayment",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "xrpSignSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "xrpSignTrustline",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Other calls"
+ },
+ {
+  "name": "xrpSwap",
+  "query": false,
+  "cost": "one action",
+  "availability": "everyone",
+  "group": "Swap · Execution"
+ }
+]
